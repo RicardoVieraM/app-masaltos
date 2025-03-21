@@ -9,6 +9,8 @@ import signup from './src/signup';
 import recordarcontraseña from './src/recordar-contraseña';
 import signin from './src/signin';
 import inicio from './src/inicio';
+import details from './src/details';
+import perfil from './src/perfil';
 
 const Stack = createStackNavigator();
 
@@ -46,6 +48,8 @@ export default function App() {
         <Stack.Screen name="recordarcontraseña" component={recordarcontraseña} options={{ headerShown: false }} />
         <Stack.Screen name="signin" component={signin} options={{ headerShown: false }} />
         <Stack.Screen name="inicio" component={inicio} options={{ headerShown: false }} />
+        <Stack.Screen name="details" component={details} options={{ headerShown: false }} />
+        <Stack.Screen name="perfil" component={perfil} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, TextInput, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, Image, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
@@ -11,11 +12,85 @@ export default function HomeScreen() {
     Montserrat_400Regular,
     Montserrat_500Medium
   });
+  const [menuVisible, setMenuVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-250)).current;
+  const navigation = useNavigation();
+
+  const toggleMenu = () => {
+    if (menuVisible) {
+      Animated.timing(slideAnim, {
+        toValue: -250,
+        duration: 500,
+        useNativeDriver: false,
+      }).start(() => setMenuVisible(false));
+    } else {
+      setMenuVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
 
   return (
     <View style={styles.container}>
+      {menuVisible && (
+        <Animated.View style={[styles.sideMenu, { left: slideAnim }]}> 
+          <TouchableOpacity style={styles.closeButton} onPress={toggleMenu}>
+            <Feather name="x" size={24} color="black" />
+          </TouchableOpacity>
+          <Image source={require('../assets/shoe1.png')} style={styles.userImage} />
+          <Text style={styles.menuGreeting}>Hola,</Text>
+          <Text style={styles.menuUser}>Nerea</Text>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <MaterialCommunityIcons name="account-outline" size={24} color="black" />
+              <Text style={styles.menuText}>Perfil</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <AntDesign name="home" size={24} color='#C55417' />
+              <Text style={styles.menuCurrentText}>Home</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <Feather name="calendar" size={24} color="black" />
+              <Text style={styles.menuText}>Catálogo</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+            <MaterialCommunityIcons name="truck-fast-outline" size={24} color="black" />
+              <Text style={styles.menuText}>Pedidos</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <Ionicons name="notifications-outline" size={24} color="black" />
+              <Text style={styles.menuText}>Notificaciones</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <Ionicons name="settings-outline" size={24} color="black" />
+              <Text style={styles.menuText}>Configuración</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.menuSeparator} />
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <Ionicons name="log-out-outline" size={24} color="black" />
+              <Text style={styles.menuText}>Salir</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={toggleMenu}>
           <Feather style={styles.headerIcon} name="menu" size={24} color="black" />
         </TouchableOpacity>
         <Image source={require('../assets/logo-masaltos.png')} style={styles.logo} />
@@ -43,13 +118,13 @@ export default function HomeScreen() {
 
         <Text style={styles.sectionTitle}>Zapatos populares</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
-            <View style={styles.productCard}>
-                <Image source={require('../assets/shoe1.png')} style={styles.productImage} />
-                <Text style={styles.desc}>BEST SELLER</Text>
-                <Text style={styles.productTitle}>Treviso</Text>
-                <Text style={styles.productPrice}>143,10 €</Text>
-                <TouchableOpacity style={styles.add}><Text style={styles.addText}>+</Text></TouchableOpacity>
-            </View>
+          <TouchableOpacity style={styles.productCard} onPress={() => navigation.navigate('details')} >
+            <Image source={require('../assets/shoe1.png')} style={styles.productImage} />
+            <Text style={styles.desc}>BEST SELLER</Text>
+            <Text style={styles.productTitle}>Treviso</Text>
+            <Text style={styles.productPrice}>143,10 €</Text>
+            <TouchableOpacity style={styles.add}><Text style={styles.addText}>+</Text></TouchableOpacity>
+          </TouchableOpacity>
             <View style={styles.productCard}>
                 <Image source={require('../assets/shoe2.png')} style={styles.productImage} />
                 <Text style={styles.desc}>BEST SELLER</Text>
@@ -74,10 +149,10 @@ export default function HomeScreen() {
 
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.bottomNavIcon}><AntDesign name="home" size={24} color='#C55417' /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavIcon}><AntDesign name="car" size={24} color="black" /></TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavIcon}><MaterialCommunityIcons name="truck-fast-outline" size={24} color="#707B81" /></TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavCatalogIcon}><Feather name="calendar" size={24} color="white" /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavIcon}><Ionicons name="notifications-outline" size={24} color="black" /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavIcon}><MaterialCommunityIcons name="account-outline" size={24} color="black" /></TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavIcon}><Ionicons name="notifications-outline" size={24} color="#707B81" /></TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavIcon} onPress={() => navigation.navigate('perfil')} ><MaterialCommunityIcons name="account-outline" size={24} color="#707B81" /></TouchableOpacity>
       </View>
     </View>
   );
@@ -106,6 +181,71 @@ const styles = StyleSheet.create({
     height: 50,
     marginLeft: 40,
     marginRight: 40,
+  },
+  sideMenu: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 400,
+    backgroundColor: '#fcecdf',
+    padding: 20,
+    paddingTop: 50,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 30,
+  },
+  userImage: {
+    height: 80,
+    width: 80,
+    borderRadius: 40,
+    marginBottom: 20,
+  },
+  menuGreeting: {
+    fontSize: 20,
+    fontFamily: 'Montserrat_500Medium',
+    marginBottom: 10,
+  },
+  menuUser: {
+    fontSize: 25,
+    fontFamily: 'Montserrat_500Medium',
+    marginBottom: 30,
+  },
+  menuItem: {
+    paddingVertical: 15,
+    marginLeft: 10,
+  },
+  menuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuText: {
+    fontSize: 16,
+    fontFamily: 'Montserrat_500Medium',
+    marginLeft: 20,
+  },
+  menuCurrentText: {
+    fontSize: 16,
+    fontFamily: 'Montserrat_500Medium',
+    marginLeft: 20,
+    color: '#C55417',
+  },
+  menuSeparator: {
+    height: 3,
+    backgroundColor: 'black',
+    marginVertical: 10,
+    marginLeft: 10,
+    marginRight: 150,
+    marginTop: 30,
+    marginBottom: 30,
+    borderRadius: 5,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -215,8 +355,9 @@ const styles = StyleSheet.create({
     right: 10,
   },
   addText: {
+    fontFamily: 'Montserrat_400Regular',
     color: '#fff',
-    fontSize: 20,
+    fontSize: 25,
     textAlign: 'center',
   },
   lastProductCard: {
@@ -240,8 +381,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     height: 80,
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderColor: '#EAEAEA',
     position: 'absolute',
     bottom: 0,
     width: '112%',
@@ -255,4 +394,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#C55417',
     borderRadius: 30,
   },
-});
+}); 
