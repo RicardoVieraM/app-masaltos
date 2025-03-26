@@ -11,6 +11,11 @@ import signin from './src/signin';
 import inicio from './src/inicio';
 import details from './src/details';
 import perfil from './src/perfil';
+import pedidos from './src/pedidos';
+import detallespedido from './src/detalles-pedido';
+import notifications from './src/notifications';
+import catalogo from './src/catalogo';
+import cart from './src/cart';
 
 const Stack = createStackNavigator();
 
@@ -50,6 +55,11 @@ export default function App() {
         <Stack.Screen name="inicio" component={inicio} options={{ headerShown: false }} />
         <Stack.Screen name="details" component={details} options={{ headerShown: false }} />
         <Stack.Screen name="perfil" component={perfil} options={{ headerShown: false }} />
+        <Stack.Screen name="pedidos" component={pedidos} options={{ headerShown: false }} />
+        <Stack.Screen name="detallespedido" component={detallespedido} options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" component={notifications} options={{ headerShown: false }} />
+        <Stack.Screen name="catalogo" component={catalogo} options={{ headerShown: false }} />
+        <Stack.Screen name="cart" component={cart} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

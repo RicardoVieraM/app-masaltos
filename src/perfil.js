@@ -1,21 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
 import { useNavigation } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { auth } from '../firebaseConfig';
+import {
+  updateProfile,
+  updatePassword,
+  onAuthStateChanged,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  signOut
+} from 'firebase/auth';
 
-export default function LoginScreen() {
+export default function PerfilScreen() {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
+  const [emailVerificado, setEmailVerificado] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const navigation = useNavigation();
+
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
     Montserrat_500Medium
   });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && !hasLoaded) {
+        setEmail(user.email);
+        setNombre(user.displayName || '');
+        setEmailVerificado(user.emailVerified);
+        setHasLoaded(true);
+      }
+    });
+    return unsubscribe;
+  }, [hasLoaded]);
+
+  const handleUpdateProfile = async () => {
+    const user = auth.currentUser;
+    try {
+      if (!user) return;
+
+      if (!currentPassword.trim()) {
+        alert("Introduce tu contraseña actual para poder guardar los cambios.");
+        return;
+      }
+
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      await updateProfile(user, { displayName: nombre.trim() });
+
+      if (password.trim().length >= 6) {
+        await updatePassword(user, password.trim());
+        alert("Contraseña actualizada correctamente.");
+      }
+
+      alert('Perfil actualizado correctamente.');
+    } catch (error) {
+      alert('Error al actualizar el perfil: ' + error.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigation.navigate('signin');
+    } catch (error) {
+      alert('Error al cerrar sesión: ' + error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -36,37 +96,47 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Nerea Hebles</Text>
+      <Text style={styles.title}>{nombre || 'Tu perfil'}</Text>
 
       <Text style={styles.label}>Nombre completo</Text>
+      <TextInput style={styles.input} value={nombre} onChangeText={setNombre} />
+
+      <Text style={styles.label}>Correo electrónico</Text>
+      <TextInput style={styles.input} value={email} editable={false} />
+      <Text style={{ fontFamily: 'Montserrat_400Regular', fontSize: 12, color: emailVerificado ? 'green' : 'red', marginTop: 5, marginLeft: 10 }}>
+        {emailVerificado ? 'Correo verificado' : 'Correo no verificado'}
+      </Text>
+
+      <Text style={styles.label}>Contraseña actual</Text>
       <TextInput
         style={styles.input}
-        placeholder="Nerea Hebles"
-        value={nombre}
-        onChangeText={setNombre}
+        placeholder="••••••••"
+        secureTextEntry={true}
+        value={currentPassword}
+        onChangeText={setCurrentPassword}
       />
 
-      <Text style={styles.label}>Dirección email</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="nerea@gmail.com"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <Text style={styles.label}>Contraseña</Text>
+      <Text style={styles.label}>Nueva contraseña</Text>
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
-          placeholder="••••••••"
+          placeholder="Nueva contraseña"
           secureTextEntry={secureText}
           value={password}
           onChangeText={setPassword}
         />
         <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-          <MaterialCommunityIcons name={secureText ? "eye-off" : "eye"} size={24} color="gray" />
+          <MaterialCommunityIcons name={secureText ? 'eye-off' : 'eye'} size={24} color="gray" />
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={styles.saveButton} onPress={handleUpdateProfile}>
+        <Text style={styles.saveButtonText}>Guardar cambios</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -125,6 +195,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontFamily: 'Montserrat_500Medium',
+    marginTop: 15,
     marginBottom: 5,
     alignSelf: 'flex-start',
   },
@@ -133,7 +204,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 12,
     borderRadius: 40,
-    marginBottom: 15,
     width: '100%',
   },
   passwordContainer: {
@@ -148,5 +218,29 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     paddingVertical: 12,
+  },
+  saveButton: {
+    backgroundColor: '#C55417',
+    padding: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  saveButtonText: {
+    fontFamily: 'Montserrat_500Medium',
+    color: '#fff',
+    fontSize: 16,
+  },
+  logoutButton: {
+    backgroundColor: '#6c757d',
+    padding: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  logoutButtonText: {
+    fontFamily: 'Montserrat_500Medium',
+    color: '#fff',
+    fontSize: 16,
   },
 });

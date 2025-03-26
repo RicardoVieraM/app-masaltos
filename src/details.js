@@ -2,15 +2,20 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 
 export default function DetailsScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { producto } = route.params;
+
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
     Montserrat_500Medium
   });
+
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
@@ -18,25 +23,21 @@ export default function DetailsScreen() {
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.category}>Botas</Text>
+        <Text style={styles.category}>{producto.productType}</Text>
         <TouchableOpacity style={styles.headerIcon}>
           <Feather name="shopping-bag" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
-      <Image source={require('../assets/shoe1.png')} style={styles.image} />
+      <Image source={{ uri: producto.imageUrl }} style={styles.image} />
       <View style={styles.productCard}>
-        <Text style={styles.title}>Treviso</Text>
+        <Text style={styles.title}>{producto.name}</Text>
 
-        <Text style={styles.description}>
-          Zapatos con alzas. Exterior de piel flor de primera calidad. Interior forrado en piel de primera calidad.
-        </Text>
+        <Text style={styles.description}>{producto.description}</Text>
 
         <View style={styles.imageRow}>
-          <Image source={require('../assets/img1.png')} style={styles.descriptionImg} />
-          <Image source={require('../assets/img2.png')} style={styles.descriptionImg} />
-          <Image source={require('../assets/img3.png')} style={styles.descriptionImg} />
-          <Image source={require('../assets/img4.png')} style={styles.descriptionImg} />
+          {/* Puedes poner aquí más imágenes si las tienes */}
+          <Image source={{ uri: producto.imageUrl }} style={styles.descriptionImg} />
         </View>
 
         <View style={styles.sizeRow}>
@@ -49,28 +50,27 @@ export default function DetailsScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity style={styles.tallaNumber}><Text style={styles.tallaNumberText}>38</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.tallaNumber}><Text style={styles.tallaNumberText}>39</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.tallaNumberCurrent}><Text style={styles.tallaNumberCurrentText}>40</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.tallaNumber}><Text style={styles.tallaNumberText}>41</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.tallaNumber}><Text style={styles.tallaNumberText}>42</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.tallaNumber}><Text style={styles.tallaNumberText}>43</Text></TouchableOpacity>
+          {[38, 39, 40, 41, 42, 43].map((size, i) => (
+            <TouchableOpacity key={i} style={size === 40 ? styles.tallaNumberCurrent : styles.tallaNumber}>
+              <Text style={size === 40 ? styles.tallaNumberCurrentText : styles.tallaNumberText}>{size}</Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
 
         <View style={styles.priceRow}>
           <View>
             <Text style={styles.priceText}>Precio</Text>
-            <Text style={styles.price}>143,10 €</Text>
+            <Text style={styles.price}>{producto.price}</Text>
           </View>
           <TouchableOpacity style={styles.button}>
             <Text style={styles.buttonText}>Añadir al carrito</Text>
           </TouchableOpacity>
         </View>
-
       </View>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

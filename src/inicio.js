@@ -1,11 +1,21 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, Image, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+
+const categories = [
+  { name: 'Botas', image: require('../assets/botas.png') },
+  { name: 'Novios', image: require('../assets/novios.png') },
+  { name: 'Sneakers', image: require('../assets/sneakers.png') },
+  { name: 'Casual', image: require('../assets/casual.png') },
+  { name: 'Vestir', image: require('../assets/vestir.png') },
+  { name: 'Mocasines', image: require('../assets/mocasines.png') },
+  { name: 'Goodyear', image: require('../assets/goodyear.png') },
+];
 
 export default function HomeScreen() {
   let [fontsLoaded] = useFonts({
@@ -13,37 +23,55 @@ export default function HomeScreen() {
     Montserrat_500Medium
   });
   const [menuVisible, setMenuVisible] = useState(false);
+  const route = useRoute();
+  const [userName, setUserName] = useState(route.params?.userName || 'Usuario');
   const slideAnim = useRef(new Animated.Value(-250)).current;
   const navigation = useNavigation();
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const toggleMenu = () => {
     if (menuVisible) {
-      Animated.timing(slideAnim, {
-        toValue: -250,
-        duration: 500,
-        useNativeDriver: false,
-      }).start(() => setMenuVisible(false));
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: -250,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: false,
+        }),
+      ]).start(() => setMenuVisible(false));
     } else {
       setMenuVisible(true);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: false,
-      }).start();
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+      ]).start();
     }
   };
 
   return (
     <View style={styles.container}>
       {menuVisible && (
-        <Animated.View style={[styles.sideMenu, { left: slideAnim }]}> 
+        <Animated.View style={[styles.sideMenu, { left: slideAnim, opacity: opacityAnim }]}>
           <TouchableOpacity style={styles.closeButton} onPress={toggleMenu}>
             <Feather name="x" size={24} color="black" />
           </TouchableOpacity>
           <Image source={require('../assets/shoe1.png')} style={styles.userImage} />
           <Text style={styles.menuGreeting}>Hola,</Text>
-          <Text style={styles.menuUser}>Nerea</Text>
-          <TouchableOpacity style={styles.menuItem}>
+          <Text style={styles.menuUser}>{userName}</Text>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('perfil')} >
             <View style={styles.menuItemContent}>
               <MaterialCommunityIcons name="account-outline" size={24} color="black" />
               <Text style={styles.menuText}>Perfil</Text>
@@ -55,19 +83,19 @@ export default function HomeScreen() {
               <Text style={styles.menuCurrentText}>Home</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('catalogo')} >
             <View style={styles.menuItemContent}>
               <Feather name="calendar" size={24} color="black" />
               <Text style={styles.menuText}>Catálogo</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('pedidos')} >
             <View style={styles.menuItemContent}>
             <MaterialCommunityIcons name="truck-fast-outline" size={24} color="black" />
               <Text style={styles.menuText}>Pedidos</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('notifications')} >
             <View style={styles.menuItemContent}>
               <Ionicons name="notifications-outline" size={24} color="black" />
               <Text style={styles.menuText}>Notificaciones</Text>
@@ -94,7 +122,7 @@ export default function HomeScreen() {
           <Feather style={styles.headerIcon} name="menu" size={24} color="black" />
         </TouchableOpacity>
         <Image source={require('../assets/logo-masaltos.png')} style={styles.logo} />
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('cart')} >
           <Feather style={styles.headerIcon} name="shopping-bag" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -105,18 +133,27 @@ export default function HomeScreen() {
       </View>
       
       <View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categories}>
-            <TouchableOpacity style={styles.top}>
-                <MaterialCommunityIcons name="fire" size={24} color="red" style={styles.iconLeft} />
-                <Text style={styles.topText}>Top</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
+          <TouchableOpacity style={styles.top}>
+            <MaterialCommunityIcons name="fire" size={24} color="red" style={styles.iconLeft} />
+            <Text style={styles.topText}>Top</Text>
+          </TouchableOpacity>
+
+          {categories.map((item, index) => (
+            <TouchableOpacity key={index} >
+              <View style={[styles.categoryItem, selectedCategory === item.name && { opacity: 0.5 }]}>
+                <Image source={item.image} style={styles.categoryImage} />
+                <Text style={styles.categoryText}>{item.name}</Text>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.category}><Text style={styles.categoryText}>Botas</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.category}><Text style={styles.categoryText}>Novios</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.category}><Text style={styles.categoryText}>Sneakers</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.category}><Text style={styles.categoryText}>Casual</Text></TouchableOpacity>
+          ))}
         </ScrollView>
 
-        <Text style={styles.sectionTitle}>Zapatos populares</Text>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 5}}>
+          <Text style={styles.sectionTitle}>Zapatos populares</Text>
+          <TouchableOpacity><Text style={styles.verTodos}>Ver todos</Text></TouchableOpacity>
+        </View>
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
           <TouchableOpacity style={styles.productCard} onPress={() => navigation.navigate('details')} >
             <Image source={require('../assets/shoe1.png')} style={styles.productImage} />
@@ -134,7 +171,11 @@ export default function HomeScreen() {
             </View>
         </ScrollView>
 
-        <Text style={styles.sectionTitle}>Nuevos</Text>
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 5}}>
+          <Text style={styles.sectionTitle}>Nuevos</Text>
+          <TouchableOpacity><Text style={styles.verTodos}>Ver todos</Text></TouchableOpacity>
+        </View>
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
           <View style={styles.lastProductCard}>
             <View>
@@ -147,12 +188,22 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
+      <TouchableOpacity style={styles.floatingCart} onPress={() => navigation.navigate('catalogo')}>
+        <Feather name="shopping-bag" size={24} color="#fff" />
+      </TouchableOpacity>
+
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.bottomNavIcon}><AntDesign name="home" size={24} color='#C55417' /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavIcon}><MaterialCommunityIcons name="truck-fast-outline" size={24} color="#707B81" /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavCatalogIcon}><Feather name="calendar" size={24} color="white" /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavIcon}><Ionicons name="notifications-outline" size={24} color="#707B81" /></TouchableOpacity>
-        <TouchableOpacity style={styles.bottomNavIcon} onPress={() => navigation.navigate('perfil')} ><MaterialCommunityIcons name="account-outline" size={24} color="#707B81" /></TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavIcon} onPress={() => navigation.navigate('pedidos')} >
+          <MaterialCommunityIcons name="truck-fast-outline" size={24} color="#707B81" />
+        </TouchableOpacity>
+        <TouchableOpacity style={{ width: 70 }} />
+        <TouchableOpacity style={styles.bottomNavIcon} onPress={() => navigation.navigate('notifications')} >
+          <Ionicons name="notifications-outline" size={24} color="#707B81" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavIcon} onPress={() => navigation.navigate('perfil')} >
+          <MaterialCommunityIcons name="account-outline" size={24} color="#707B81" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -269,17 +320,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#C55417',
-    padding: 10,
+    padding: 5,
     borderRadius: 50,
     marginRight: 10,
-    width: 100,
+    width: 90,
     height: 50,
     justifyContent: 'center',
   },
   topText: {
     fontFamily: 'Montserrat_400Regular',
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     marginLeft: 5,
   },
   iconLeft: {
@@ -311,7 +362,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 18,
-    marginBottom: 15,
+    marginBottom: 8,
   },
   productCard: {
     backgroundColor: '#fff',
@@ -332,6 +383,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 10,
   },
+/*
+  desc: {
+    color: '#C55417',
+    fontFamily: 'Montserrat_500Medium',
+    fontSize: 12,
+    marginBottom: 10,
+    backgroundColor: '#ffe3d2',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+*/
   productTitle: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 16,
@@ -361,7 +426,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   lastProductCard: {
-    flexDirection: 'row', // Para alinear elementos en fila
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     height: 150,
@@ -374,24 +439,75 @@ const styles = StyleSheet.create({
   lastProductImage: {
     width: 200,
     height: 130,
-    marginLeft: 10, // Espaciado a la derecha del texto
+    marginLeft: 10,
   },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
     height: 80,
     backgroundColor: '#fff',
     position: 'absolute',
     bottom: 0,
-    width: '112%',
+    width: '113%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    zIndex: 1,
+  },
+  floatingCart: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    backgroundColor: '#C55417',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  bottomNavCatalogIcon: {
+    padding: 20,
+    backgroundColor: '#C55417',
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateY: -20 }],
   },
   bottomNavIcon: {
     padding: 25,
   },
-  bottomNavCatalogIcon: {
-    padding: 15,
-    margin: 10,
-    backgroundColor: '#C55417',
+  verTodos: {
+    fontFamily: 'Montserrat_400Regular',
+    color: '#C55417',
+    fontSize: 14,
+  },
+  categoriesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  categoryItem: {
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  categoryImage: {
+    width: 40,
+    height: 40,
     borderRadius: 30,
+    marginBottom: 5,
+  },
+  categoryText: {
+    fontFamily: 'Montserrat_400Regular',
+    fontSize: 10,
   },
 }); 

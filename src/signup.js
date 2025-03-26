@@ -3,14 +3,37 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'reac
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
 import { useNavigation } from '@react-navigation/native';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
 import logo from '../assets/logo-google.png';
 
 export default function LoginScreen() {
+  const isValidEmail = email => /\S+@\S+\.\S+/.test(email);
+  const handleSignup = async () => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
+      
+      // Aquí se guarda el nombre en el perfil
+      await updateProfile(userCredential.user, {
+        displayName: nombre.trim()
+      });
+  
+      await sendEmailVerification(auth.currentUser);
+
+      alert('¡Cuenta creada! Revisa tu email para verificar tu cuenta.');
+      navigation.navigate('inicio', { userName: nombre.trim() });
+    } catch (error) {
+      alert("Error al registrarse: " + error.message);
+    }
+  };
+  
+
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
+
   const navigation = useNavigation();
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
@@ -41,6 +64,11 @@ export default function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
+
+      <Text style={{ color: emailVerificado ? 'green' : 'red', marginBottom: 10 }}>
+        {emailVerificado ? 'Correo verificado' : 'Correo no verificado'}
+      </Text>
+
       
       <Text style={styles.label}>Contraseña</Text>
       <View style={styles.passwordContainer}>
@@ -56,8 +84,8 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
       
-      <TouchableOpacity style={styles.loginButton}>
-        <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+      <TouchableOpacity style={styles.loginButton} onPress={handleSignup}>
+        <Text style={styles.loginButtonText}>Crear cuenta</Text>
       </TouchableOpacity>
       
       <TouchableOpacity style={styles.googleButton}>

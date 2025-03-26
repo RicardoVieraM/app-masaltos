@@ -3,10 +3,23 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'reac
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
 import { useNavigation } from '@react-navigation/native';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
 import logo from '../assets/logo-google.png';
 
 export default function RegisterScreen() {
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      const nombre = user.displayName || 'Usuario';
+      navigation.navigate('inicio', { userName: nombre });
+    } catch (error) {
+      alert("Error al iniciar sesión: " + error.message);
+    }
+  };  
+
   const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [secureText, setSecureText] = useState(true);
@@ -51,7 +64,7 @@ export default function RegisterScreen() {
           <Text style={styles.forgotPassword}>Recordar contraseña</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('inicio')} >
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin} >
           <Text style={styles.loginButtonText}>Iniciar sesión</Text>
         </TouchableOpacity>
         
