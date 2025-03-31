@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
 import { useNavigation } from '@react-navigation/native';
 
-export default function pedidos() {
+export default function Pedidos() {
   const navigation = useNavigation();
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,

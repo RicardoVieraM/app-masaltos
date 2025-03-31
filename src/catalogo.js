@@ -4,17 +4,16 @@ import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import xml2js from 'react-native-xml2js';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
 
 const categories = [
-  { name: 'Botas', image: require('../assets/botas.png') },
-  { name: 'Novios', image: require('../assets/novios.png') },
-  { name: 'Sneakers', image: require('../assets/sneakers.png') },
-  { name: 'Casual', image: require('../assets/casual.png') },
-  { name: 'Vestir', image: require('../assets/vestir.png') },
-  { name: 'Mocasines', image: require('../assets/mocasines.png') },
-  { name: 'Goodyear', image: require('../assets/goodyear.png') },
+  { name: 'Botas', text:'Botas', image: require('../assets/botas.png') },
+  { name: 'Zapatos para novio', text:'Novios', image: require('../assets/novios.png') },
+  { name: 'Sneakers corner', text:'Sneakers', image: require('../assets/sneakers.png') },
+  { name: 'Zapatos casual', text:'Casual', image: require('../assets/casual.png') },
+  { name: 'Zapatos de vestir', text:'Vestir', image: require('../assets/vestir.png') },
+  { name: 'Mocasines', text:'Mocasines', image: require('../assets/mocasines.png') },
+  { name: 'Zapatos Goodyear', text:'Goodyear', image: require('../assets/goodyear.png') },
 ];
 
 const ITEMS_PER_PAGE = 10;
@@ -28,109 +27,176 @@ export default function Catalogo() {
   const [showFilter, setShowFilter] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const [selectedCategory, setSelectedCategory] = useState(null);
-  
+  const [categoryMap, setCategoryMap] = useState({});
+  const categoryMapRef = useRef({});
+  const currentPageRef = useRef(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const baseURL = 'https://pruebas.masaltos.com/api';
+  const authHeader = 'Basic ' + btoa('YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416:');
+  const headers = { Authorization: authHeader };
+
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
     Montserrat_500Medium
   });
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('https://www.masaltos.com/kuantokustad4f731fa87ab46135257d42c74b1f5ee.es.shop1.xml');
-        const xml = await response.text();
+  const getPublicImageUrl = (imageId) => {
+    const digits = imageId.toString().split('');
+    const path = digits.join('/');
+    return `https://pruebas.masaltos.com/img/p/${path}/${imageId}.jpg`;
+  };
+
+  const fetchCategoryMap = async () => {
+    const res = await fetch(`${baseURL}/categories?display=[id,name,id_parent]&output_format=JSON`, { headers });
+    const data = await res.json();
+    const map = Object.fromEntries(data.categories.map(cat => [cat.id, cat.name[0]?.value || '']));
+    setCategoryMap(map);
+    return map;
+  };
+
+  const extractCategoryNames = (product, categoryMapRef) => {
+    const categoryIds = new Set();
   
-        const parser = new xml2js.Parser({ explicitArray: true });
-        parser.parseString(xml, (err, result) => {
-          if (err) throw err;
+    // Obtener categorías asociadas dentro de <associations><categories>
+    if (product.associations?.categories?.category) {
+      const associatedCategories = Array.isArray(product.associations.categories.category)
+        ? product.associations.categories.category
+        : [product.associations.categories.category];
+      
+      associatedCategories.forEach(cat => {
+        if (cat.id) categoryIds.add(cat.id.toString().trim());
+      });
+    }
   
-          const items = result?.rss?.channel?.[0]?.item || [];
+    // Agregar la categoría por defecto si existe
+    if (product.id_category_default) {
+      categoryIds.add(product.id_category_default.toString().trim());
+    }
   
-          const colorMap = {
-            blanco: 'white',
-            negro: 'black',
-            marrón: 'brown',
-            azul: 'blue',
-            rojo: 'red',
-            gris: 'gray',
-            verde: 'green',
-            beige: '#f5f5dc',
-            camel: '#c19a6b',
-            burdeos: '#800020',
-            borgoña: '#800020',
+    // Convertir los IDs a nombres de categorías usando categoryMapRef
+    const categoryNames = Array.from(categoryIds)
+      .map(id => categoryMapRef[id])
+      .filter(Boolean); // Esto asegura que solo se agreguen nombres válidos
+  
+    return categoryNames; // Devolver SIEMPRE un array
+  };  
+  
+  
+  const fetchProductsByPage = async (pageNumber, categoryMapRef) => {
+    try {
+      const offset = (pageNumber - 1) * ITEMS_PER_PAGE;
+      const productRes = await fetch(`${baseURL}/products?display=[id,name,id_category_default]&limit=${ITEMS_PER_PAGE}&offset=${offset}&output_format=JSON`, { headers });
+      const productData = await productRes.json();
+      const products = productData.products;
+  
+      const detailed = await Promise.all(products.map(async (prod) => {
+        try {
+          const res = await fetch(`${baseURL}/products/${prod.id}?output_format=JSON`, { headers });
+          const detailData = await res.json();
+          const product = detailData.product;
+  
+          const name = product.name[0]?.value || 'Sin nombre';
+          const rawDescription = product.description_short?.[0]?.value || '';
+          const cleanedDescription = rawDescription.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+          const description = cleanedDescription.split('Descripción:')[0].trim();
+          const price = product.price || '0.00';
+          const color = '#ccc';
+          const idImage = product.id_default_image ? parseInt(product.id_default_image) : null;
+          const imageUrl = idImage ? getPublicImageUrl(idImage) : null;
+          const productType = extractCategoryNames(product, categoryMapRef); // Esto SIEMPRE debe ser un array
+  
+          return {
+            name,
+            description,
+            price: `${parseFloat(price).toFixed(2)} €`,
+            imageUrl,
+            colors: [color],
+            productType, // Aquí se asegura que sea un array
           };
+        } catch {
+          return null;
+        }
+      }));
   
-          const allParsed = items.map((item) => {
-            const rawName = item.model?.[0] || item.title?.[0] || '';
-            const nameWords = rawName.trim().split(' ');
-            const name = nameWords.slice(0, -2).join(' ');
-            const productType = item['g:product_type']?.[0]?.trim().toLowerCase() || '';
-
-            const descriptionFull = item.description?.[0] || '';
-            const description = descriptionFull.split('Descripción:')[0].trim();
-            const price = item['g:price']?.[0] || '0,00 EUR';
-            const imageUrl = item['g:image_link']?.[0] || '';
-            const colorRaw = item['g:color']?.[0] || '';
-            const colorMap = {
-              blanco: 'white',
-              negro: 'black',
-              marrón: 'brown',
-              azul: 'blue',
-              rojo: 'red',
-              gris: 'gray',
-              verde: 'green',
-              beige: '#f5f5dc',
-              camel: '#c19a6b',
-              burdeos: '#800020',
-              borgoña: '#800020',
-            };
-            const color = colorMap[colorRaw.trim().toLowerCase()] || '#ccc';
-
-            return {
-              name,
-              description,
-              price,
-              imageUrl,
-              colors: [color],
-              productType,
-            };
-          });
-
-          const seen = new Set();
-          const parsed = allParsed.filter((item) => {
-            if (seen.has(item.name)) return false;
-            seen.add(item.name);
-            return true;
-          });
-
-  
-          console.log("PRODUCTOS CARGADOS:", parsed);
-          setAllProducts(parsed);
-          setVisibleProducts(parsed.slice(0, ITEMS_PER_PAGE));
-          setPage(1);
-        });
-      } catch (error) {
-        console.error('Error al cargar productos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    fetchProducts();
-  }, []);  
-  
-  const loadMore = () => {
-    const nextPage = page + 1;
-    const start = (nextPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-  
-    const newItems = allProducts.slice(start, end);
-    if (newItems.length > 0) {
-      setVisibleProducts((prev) => [...prev, ...newItems]);
-      setPage(nextPage);
+      return detailed.filter(p => p !== null);
+    } catch (error) {
+      console.error('Error paginando:', error);
+      return [];
     }
   };
   
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      const map = await fetchCategoryMap();
+      setCategoryMap(map);
+      categoryMapRef.current = map;
+
+      const productRes = await fetch(`${baseURL}/products?display=[id,name,id_category_default]&output_format=JSON`, { headers });
+      const productData = await productRes.json();
+      const products = productData.products;
+
+      const detailed = await Promise.all(products.map(async (prod) => {
+        try {
+          const res = await fetch(`${baseURL}/products/${prod.id}?output_format=JSON`, { headers });
+          const detailData = await res.json();
+          const product = detailData.product;
+
+          const name = product.name[0]?.value || 'Sin nombre';
+          const rawDescription = product.description_short?.[0]?.value || '';
+          const cleanedDescription = rawDescription.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+          const description = cleanedDescription.split('Descripción:')[0].trim();
+          const price = product.price || '0.00';
+          const color = '#ccc';
+          const idImage = product.id_default_image ? parseInt(product.id_default_image) : null;
+          const imageUrl = idImage ? getPublicImageUrl(idImage) : null;
+          const productType = extractCategoryNames(product, map);
+
+          return {
+            name,
+            description,
+            price: `${parseFloat(price).toFixed(2)} €`,
+            imageUrl,
+            colors: [color],
+            productType,
+          };
+        } catch {
+          return null;
+        }
+      }));
+
+      const cleaned = detailed.filter(p => p !== null);
+
+      setAllProducts(cleaned);
+      setVisibleProducts(cleaned.slice(0, ITEMS_PER_PAGE));
+      setPage(1);
+      currentPageRef.current = 1;
+      setLoading(false);
+    };
+
+    loadInitialData();
+  }, []);
+  
+
+  const loadMore = () => {
+    if (isLoadingMore) return;
+  
+    setIsLoadingMore(true);
+    const nextPage = currentPageRef.current + 1;
+    const start = (nextPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const nextProducts = allProducts.slice(start, end);
+  
+    if (nextProducts.length > 0) {
+      setVisibleProducts(prev => [...prev, ...nextProducts]);
+      setPage(nextPage);
+      currentPageRef.current = nextPage;
+    }
+  
+    setIsLoadingMore(false);
+  };
 
   const toggleFilter = () => {
     if (showFilter) {
@@ -158,19 +224,43 @@ export default function Catalogo() {
       setSelectedCategory(null);
       setVisibleProducts(allProducts.slice(0, ITEMS_PER_PAGE));
       setPage(1);
+      currentPageRef.current = 1;
     } else {
-      const filtered = allProducts.filter(
-        (product) => product.productType.toLowerCase().includes(category.toLowerCase())
-      );
+      const filtered = allProducts.filter((product) => {
+        const categories = product.productType || []; // Asegúrate que sea un array
+  
+        if (Array.isArray(categories)) { // Asegúrate de que esté en formato de array
+          return categories.some(cat => cat.toLowerCase() === category.toLowerCase());
+        } else {
+          console.warn('Producto con formato incorrecto:', product);
+          return false;
+        }
+      });
+  
       setSelectedCategory(category);
       setVisibleProducts(filtered.slice(0, ITEMS_PER_PAGE));
       setPage(1);
+      currentPageRef.current = 1;
     }
-  };
+  };  
+  
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      onMomentumScrollEnd={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        const isCloseToBottom =
+        layoutMeasurement.height + contentOffset.y >= contentSize.height - 200;
+
+        if (isCloseToBottom && !isLoadingMore) {
+          loadMore();
+        }
+      }}
+    >
+
+
         <View style={styles.header}>
           <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
@@ -193,7 +283,7 @@ export default function Catalogo() {
             <TouchableOpacity key={index} onPress={() => filterByCategory(item.name)}>
               <View style={[styles.categoryItem, selectedCategory === item.name && { opacity: 0.5 }]}>
                 <Image source={item.image} style={styles.categoryImage} />
-                <Text style={styles.categoryText}>{item.name}</Text>
+                <Text style={styles.categoryText}>{item.text}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -218,15 +308,6 @@ export default function Catalogo() {
           ))}
         </View>
       </ScrollView>
-
-      {visibleProducts.length < allProducts.length && (
-        <View style={{ alignItems: 'center', marginVertical: 8 }}>
-          <TouchableOpacity onPress={loadMore} style={styles.button}>
-            <Text style={styles.buttonText}>Cargar más</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
 
       {showFilter && (
         <Animated.View style={[styles.slidePanel, { bottom: slideAnim }]}>
@@ -292,7 +373,7 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     alignItems: 'center',
-    marginHorizontal: 15,
+    marginHorizontal: 10,
   },
   categoryImage: {
     width: 60,

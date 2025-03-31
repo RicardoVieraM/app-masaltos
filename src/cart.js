@@ -5,7 +5,7 @@ import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-goo
 import { useNavigation } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 
-export default function cart() {
+export default function Cart() {
   const navigation = useNavigation();
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,

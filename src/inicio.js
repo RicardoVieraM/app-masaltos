@@ -155,20 +155,20 @@ export default function HomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
-          <TouchableOpacity style={styles.productCard} onPress={() => navigation.navigate('details')} >
+          <TouchableOpacity style={styles.productCard} >
             <Image source={require('../assets/shoe1.png')} style={styles.productImage} />
             <Text style={styles.desc}>BEST SELLER</Text>
             <Text style={styles.productTitle}>Treviso</Text>
             <Text style={styles.productPrice}>143,10 €</Text>
             <TouchableOpacity style={styles.add}><Text style={styles.addText}>+</Text></TouchableOpacity>
           </TouchableOpacity>
-            <View style={styles.productCard}>
-                <Image source={require('../assets/shoe2.png')} style={styles.productImage} />
-                <Text style={styles.desc}>BEST SELLER</Text>
-                <Text style={styles.productTitle}>Bergen Negro</Text>
-                <Text style={styles.productPrice}>134,10 €</Text>
-                <TouchableOpacity style={styles.add}><Text style={styles.addText}>+</Text></TouchableOpacity>
-            </View>
+          <TouchableOpacity style={styles.productCard}>
+            <Image source={require('../assets/shoe2.png')} style={styles.productImage} />
+            <Text style={styles.desc}>BEST SELLER</Text>
+            <Text style={styles.productTitle}>Bergen Negro</Text>
+            <Text style={styles.productPrice}>134,10 €</Text>
+            <TouchableOpacity style={styles.add}><Text style={styles.addText}>+</Text></TouchableOpacity>
+          </TouchableOpacity>
         </ScrollView>
 
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingHorizontal: 5}}>
@@ -177,14 +177,14 @@ export default function HomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
-          <View style={styles.lastProductCard}>
+          <TouchableOpacity style={styles.lastProductCard}>
             <View>
               <Text style={styles.desc}>BEST CHOICE</Text>
               <Text style={styles.productTitle}>Corby A azul</Text>
               <Text style={styles.productPrice}>139,00 €</Text>
             </View>
             <Image source={require('../assets/shoe3.png')} style={styles.lastProductImage} />
-          </View>
+          </TouchableOpacity>
         </ScrollView>
       </View>
 
@@ -377,6 +377,7 @@ const styles = StyleSheet.create({
     height: 100,
     alignSelf: 'center',
   },
+
   desc: {
     color: '#C55417',
     fontFamily: 'Montserrat_400Regular',
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: 8,
   },
   categoryImage: {
     width: 40,
