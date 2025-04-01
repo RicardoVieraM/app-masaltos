@@ -10,6 +10,8 @@ import logo from '../assets/logo-google.png';
 
 export default function LoginScreen() {
   const isValidEmail = email => /\S+@\S+\.\S+/.test(email);
+  const [emailVerificado, setEmailVerificado] = useState(false);
+
   const handleSignup = async () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
@@ -52,7 +54,7 @@ export default function LoginScreen() {
       <Text style={styles.label}>Tu nombre</Text>
       <TextInput
         style={styles.input}
-        placeholder="Nerea Hebles"
+        placeholder="Escribe tu nombre aquí"
         value={nombre}
         onChangeText={setNombre}
       />
@@ -60,7 +62,7 @@ export default function LoginScreen() {
       <Text style={styles.label}>Dirección email</Text>
       <TextInput
         style={styles.input}
-        placeholder="nerea@gmail.com"
+        placeholder="ejemplo@gmail.com"
         value={email}
         onChangeText={setEmail}
       />
@@ -74,7 +76,7 @@ export default function LoginScreen() {
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
-          placeholder="••••••••"
+          placeholder=""
           secureTextEntry={secureText}
           value={password}
           onChangeText={setPassword}

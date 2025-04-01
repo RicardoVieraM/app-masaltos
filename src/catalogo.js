@@ -106,6 +106,9 @@ export default function Catalogo() {
           const imageUrl = idImage ? getPublicImageUrl(idImage) : null;
           const productType = extractCategoryNames(product, categoryMapRef); // Esto SIEMPRE debe ser un array
   
+          // Añadimos el console.log aquí
+          console.log(`Producto cargado: ${name} - Categorías: ${productType.join(', ')}`);
+          
           return {
             name,
             description,
@@ -153,6 +156,9 @@ export default function Catalogo() {
           const idImage = product.id_default_image ? parseInt(product.id_default_image) : null;
           const imageUrl = idImage ? getPublicImageUrl(idImage) : null;
           const productType = extractCategoryNames(product, map);
+
+          // Añadimos el console.log aquí
+          console.log(`Producto cargado: ${name} - Categorías: ${productType.join(', ')}`);
 
           return {
             name,

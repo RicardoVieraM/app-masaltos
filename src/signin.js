@@ -50,7 +50,7 @@ export default function RegisterScreen() {
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="••••••••"
+            placeholder=""
             secureTextEntry={secureText}
             value={password}
             onChangeText={setPassword}

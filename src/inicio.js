@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
 const categories = [
   { name: 'Botas', image: require('../assets/botas.png') },
@@ -101,7 +102,7 @@ export default function HomeScreen() {
               <Text style={styles.menuText}>Notificaciones</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('settings')} >
             <View style={styles.menuItemContent}>
               <Ionicons name="settings-outline" size={24} color="black" />
               <Text style={styles.menuText}>Configuración</Text>
@@ -112,6 +113,12 @@ export default function HomeScreen() {
             <View style={styles.menuItemContent}>
               <Ionicons name="log-out-outline" size={24} color="black" />
               <Text style={styles.menuText}>Salir</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('contactanos')} >
+            <View style={styles.menuItemContent}>
+              <FontAwesome6 name="users" size={20} color="black" />
+              <Text style={styles.menuText}>Contáctanos</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -154,7 +161,7 @@ export default function HomeScreen() {
           <TouchableOpacity><Text style={styles.verTodos}>Ver todos</Text></TouchableOpacity>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
+        <ScrollView scrollEnabled={false} horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
           <TouchableOpacity style={styles.productCard} >
             <Image source={require('../assets/shoe1.png')} style={styles.productImage} />
             <Text style={styles.desc}>BEST SELLER</Text>
@@ -176,7 +183,7 @@ export default function HomeScreen() {
           <TouchableOpacity><Text style={styles.verTodos}>Ver todos</Text></TouchableOpacity>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
+        <ScrollView scrollEnabled={false} horizontal showsHorizontalScrollIndicator={false} style={styles.popularShoes}>
           <TouchableOpacity style={styles.lastProductCard}>
             <View>
               <Text style={styles.desc}>BEST CHOICE</Text>
@@ -377,14 +384,14 @@ const styles = StyleSheet.create({
     height: 100,
     alignSelf: 'center',
   },
-
+/*
   desc: {
     color: '#C55417',
     fontFamily: 'Montserrat_400Regular',
     fontSize: 12,
     marginBottom: 10,
   },
-/*
+*/
   desc: {
     color: '#C55417',
     fontFamily: 'Montserrat_500Medium',
@@ -397,7 +404,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     overflow: 'hidden',
   },
-*/
+
   productTitle: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 16,
@@ -432,9 +439,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     height: 150,
     width: 350,
-    padding: 10,
+    padding: 20,
     borderRadius: 10,
-    marginRight: 10,
     justifyContent: 'space-between'
   },
   lastProductImage: {
