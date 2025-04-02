@@ -67,7 +67,7 @@ export default function Cart() {
             <Text style={styles.totalText}>402,00 €</Text>
           </View>
 
-          <TouchableOpacity style={styles.checkoutBtn}>
+          <TouchableOpacity style={styles.checkoutBtn} onPress={() => navigation.navigate('checkout')} >
             <Text style={styles.checkoutText}>Finalizar pago</Text>
           </TouchableOpacity>
         </View>

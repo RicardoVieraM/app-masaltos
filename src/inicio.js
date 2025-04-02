@@ -196,7 +196,7 @@ export default function HomeScreen() {
       </View>
 
       <TouchableOpacity style={styles.floatingCart} onPress={() => navigation.navigate('catalogo')}>
-        <Feather name="shopping-bag" size={24} color="#fff" />
+         <Feather name="calendar" size={24} color="#fff" />
       </TouchableOpacity>
 
       <View style={styles.bottomNav}>

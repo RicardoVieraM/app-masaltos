@@ -18,6 +18,7 @@ import catalogo from './src/catalogo';
 import cart from './src/cart';
 import settings from './src/settings';
 import contactanos from './src/contactanos';
+import checkout from './src/checkout';
 
 const Stack = createStackNavigator();
 
@@ -64,6 +65,7 @@ export default function App() {
         <Stack.Screen name="cart" component={cart} options={{ headerShown: false }} />
         <Stack.Screen name="settings" component={settings} options={{ headerShown: false }} />
         <Stack.Screen name="contactanos" component={contactanos} options={{ headerShown: false }} />
+        <Stack.Screen name="checkout" component={checkout} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
