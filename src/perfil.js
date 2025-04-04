@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { auth } from '../firebaseConfig';
-import {
-  updateProfile,
-  updatePassword,
-  onAuthStateChanged,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  signOut
-} from 'firebase/auth';
+import * as ImagePicker from 'expo-image-picker';
+import { updateProfile, updatePassword, onAuthStateChanged, EmailAuthProvider , signOut, reauthenticateWithCredential  } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LOCAL_STORAGE_KEY = '@profile_image_url';
 
 export default function PerfilScreen() {
   const [nombre, setNombre] = useState('');
@@ -23,7 +20,11 @@ export default function PerfilScreen() {
   const [secureText, setSecureText] = useState(true);
   const [emailVerificado, setEmailVerificado] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
   const navigation = useNavigation();
+  const [uploading, setUploading] = useState(false);
+  const [profilePicUrl, setProfilePicUrl] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
@@ -31,16 +32,50 @@ export default function PerfilScreen() {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && !hasLoaded) {
-        setEmail(user.email);
-        setNombre(user.displayName || '');
-        setEmailVerificado(user.emailVerified);
-        setHasLoaded(true);
+    const loadImageFromStorage = async () => {
+      try {
+        const storedImage = await AsyncStorage.getItem(LOCAL_STORAGE_KEY);
+        if (storedImage) {
+          setImageUri(storedImage);
+        }
+        setIsLoaded(true); // 🔥 Indicamos que se ha terminado de cargar
+      } catch (error) {
+        console.log("Error al cargar la imagen del almacenamiento local: ", error);
       }
+    };
+
+    loadImageFromStorage();
+  }, []);
+
+
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      alert("Se necesita permiso para acceder a las fotos.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
     });
-    return unsubscribe;
-  }, [hasLoaded]);
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setImageUri(uri);
+
+      try {
+        await AsyncStorage.setItem(LOCAL_STORAGE_KEY, uri);
+        Alert.alert("¡Imagen guardada localmente con éxito!");
+      } catch (error) {
+        console.log("Error al guardar la imagen: ", error);
+      }
+    }
+  };
+
 
   const handleUpdateProfile = async () => {
     const user = auth.currentUser;
@@ -90,8 +125,17 @@ export default function PerfilScreen() {
       </View>
 
       <View style={styles.imageContainer}>
-        <Image source={require('../assets/shoe1.png')} style={styles.image} />
-        <TouchableOpacity style={styles.cameraContainer}>
+        {uploading ? (
+          <ActivityIndicator size="large" color="#C55417" />
+        ) : (
+          isLoaded && ( // 🔥 Asegúrate de que la imagen solo se muestra si se ha cargado
+            <Image 
+              source={imageUri ? { uri: imageUri } : require('../assets/pfp.png')} 
+              style={styles.image} 
+            />
+          )
+        )}
+        <TouchableOpacity style={styles.cameraContainer} onPress={handlePickImage}>
           <Feather name="camera" size={15} color="white" />
         </TouchableOpacity>
       </View>
@@ -103,9 +147,6 @@ export default function PerfilScreen() {
 
       <Text style={styles.label}>Correo electrónico</Text>
       <TextInput style={styles.input} value={email} editable={false} />
-      <Text style={{ fontFamily: 'Montserrat_400Regular', fontSize: 12, color: emailVerificado ? 'green' : 'red', marginTop: 5, marginLeft: 10 }}>
-        {emailVerificado ? 'Correo verificado' : 'Correo no verificado'}
-      </Text>
 
       <Text style={styles.label}>Contraseña actual</Text>
       <TextInput
@@ -149,7 +190,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
     marginTop: 10,
@@ -157,8 +198,6 @@ const styles = StyleSheet.create({
   category: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 20,
-    marginLeft: 90,
-    marginRight: 90,
   },
   headerIcon: {
     backgroundColor: '#fff',

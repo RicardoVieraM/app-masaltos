@@ -17,7 +17,9 @@ export default function Pedidos() {
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.category}>Pedidos</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.category}>Pedidos</Text>
+        </View>
       </View>
 
       <Text style={styles.description}>
@@ -49,16 +51,20 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
     marginBottom: 20,
     marginTop: 10,
+  },
+  titleContainer: {
+    position: 'absolute', // Permite centrar el título sin que se vea afectado por los botones
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   category: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 20,
-    marginLeft: 90,
-    marginRight: 140,
   },
   headerIcon: {
     backgroundColor: '#fff',

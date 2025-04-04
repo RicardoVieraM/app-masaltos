@@ -17,6 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
         "foregroundImage": "./assets/logo-masaltos.png",
         "backgroundColor": "#ffffff"
       }

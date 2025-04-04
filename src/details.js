@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
     marginTop: 10,
@@ -88,8 +88,6 @@ const styles = StyleSheet.create({
   category: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 20,
-    marginLeft: 90,
-    marginRight: 90,
   },
   headerIcon: {
     backgroundColor: '#fff',

@@ -17,7 +17,9 @@ export default function Notifications() {
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.category}>Notificaciones</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.category}>Notificaciones</Text>
+        </View>
       </View>
 
       <Text style={styles.status}>No leídas</Text>
@@ -61,16 +63,20 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    position: 'relative',
+    marginBottom: 20,
     marginTop: 10,
+  },
+  titleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   category: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 20,
-    marginLeft: 50,
-    marginRight: 100,
   },
   headerIcon: {
     backgroundColor: '#fff',

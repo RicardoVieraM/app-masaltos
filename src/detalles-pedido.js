@@ -17,7 +17,9 @@ import { useNavigation } from '@react-navigation/native';
             <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
               <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
             </TouchableOpacity>
-            <Text style={styles.category}>Detalles del pedido</Text>
+            <View style={styles.titleContainer}>
+              <Text style={styles.category}>Detalles del pedido</Text>
+            </View>
           </View>
         
         <View style={styles.card}>
@@ -77,16 +79,20 @@ import { useNavigation } from '@react-navigation/native';
     },
     header: {
       flexDirection: 'row',
-      justifyContent: 'center',
       alignItems: 'center',
+      position: 'relative',
       marginBottom: 20,
       marginTop: 10,
+    },
+    titleContainer: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      alignItems: 'center',
     },
     category: {
       fontFamily: 'Montserrat_500Medium',
       fontSize: 20,
-      marginLeft: 30,
-      marginRight: 80,
     },
     headerIcon: {
       backgroundColor: '#fff',

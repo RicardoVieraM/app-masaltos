@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch, ScrollView } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Octicons from '@expo/vector-icons/Octicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -19,13 +20,39 @@ export default function Settings() {
   const [location, setLocation] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const savedDarkMode = await AsyncStorage.getItem('darkMode');
+        if (savedDarkMode !== null) {
+          setDarkMode(JSON.parse(savedDarkMode));
+        }
+      } catch (error) {
+        console.error('Error loading dark mode:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const toggleDarkMode = async () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    try {
+      await AsyncStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+    } catch (error) {
+      console.error('Error saving dark mode:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>Configuración</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Configuración</Text>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -118,7 +145,7 @@ export default function Settings() {
                 trackColor={{ false: 'transparent', true: 'transparent' }}
                 thumbColor="#FFF"
                 ios_backgroundColor="transparent"
-                onValueChange={() => setDarkMode(!darkMode)}
+                onValueChange={toggleDarkMode}
                 value={darkMode}
                 style={styles.switch}
             />
@@ -144,17 +171,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    position: 'relative',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  titleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   headerIcon: {
     backgroundColor: '#fff',
-    padding: 10,
+    padding: 15,
     borderRadius: 25,
   },
   title: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 20,
-    marginLeft: 70,
   },
   sectionTitle: {
     fontFamily: 'Montserrat_500Medium',

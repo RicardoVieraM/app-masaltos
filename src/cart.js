@@ -24,7 +24,9 @@ export default function Cart() {
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>Carrito</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Carrito</Text>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -85,17 +87,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    position: 'relative',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  titleContainer: {
+    position: 'absolute', // Permite centrar el título sin que se vea afectado por los botones
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   headerIcon: {
     backgroundColor: '#fff',
-    padding: 10,
+    padding: 15,
     borderRadius: 25,
   },
   title: {
     fontFamily: 'Montserrat_500Medium',
     fontSize: 20,
-    marginLeft: 95,
   },
   cartItem: {
     flexDirection: 'row',

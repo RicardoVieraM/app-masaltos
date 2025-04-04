@@ -43,7 +43,9 @@ export default function Checkout() {
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>Checkout</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Checkout</Text>
+        </View>
       </View>
 
       <View style={styles.card}>
@@ -138,18 +140,24 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
+    position: 'relative',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  titleContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   headerIcon: {
-    padding: 10,
+    padding: 15,
     borderRadius: 25,
     backgroundColor: '#fff',
   },
   title: {
     fontSize: 20,
     fontFamily: 'Montserrat_500Medium',
-    marginLeft: 85,
   },
   card: {
     backgroundColor: '#fff',

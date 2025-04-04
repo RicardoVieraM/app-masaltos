@@ -1,12 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, Image, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LOCAL_STORAGE_KEY = '@profile_image_url';
 
 const categories = [
   { name: 'Botas', image: require('../assets/botas.png') },
@@ -26,6 +29,8 @@ export default function HomeScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const route = useRoute();
   const [userName, setUserName] = useState(route.params?.userName || 'Usuario');
+  const [userImage, setUserImage] = useState(null); // 🔥 Nuevo estado para la imagen
+  const [isLoaded, setIsLoaded] = useState(false); // 🔥 Para cargar la imagen correctamente
   const slideAnim = useRef(new Animated.Value(-250)).current;
   const navigation = useNavigation();
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -62,6 +67,25 @@ export default function HomeScreen() {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const loadImage = async () => {
+        try {
+          const storedImage = await AsyncStorage.getItem(LOCAL_STORAGE_KEY);
+          if (storedImage) {
+            setUserImage(storedImage);
+          }
+          setIsLoaded(true); 
+        } catch (error) {
+          console.log("Error al cargar la imagen del almacenamiento local: ", error);
+        }
+      };
+  
+      loadImage();
+    }, [userImage]) // 🔥 Ahora también se actualiza cuando cambias la imagen en perfil.js
+  );
+  
+
   return (
     <View style={styles.container}>
       {menuVisible && (
@@ -69,7 +93,12 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.closeButton} onPress={toggleMenu}>
             <Feather name="x" size={24} color="black" />
           </TouchableOpacity>
-          <Image source={require('../assets/shoe1.png')} style={styles.userImage} />
+          {isLoaded && (
+            <Image 
+              source={userImage ? { uri: userImage } : require('../assets/pfp.png')} 
+              style={styles.userImage} 
+            />
+          )}
           <Text style={styles.menuGreeting}>Hola,</Text>
           <Text style={styles.menuUser}>{userName}</Text>
           <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('perfil')} >
@@ -224,7 +253,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
     marginTop: 10,
@@ -237,8 +266,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 50,
-    marginLeft: 40,
-    marginRight: 40,
   },
   sideMenu: {
     position: 'absolute',
