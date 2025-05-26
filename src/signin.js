@@ -5,6 +5,7 @@ import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-goo
 import { useNavigation } from '@react-navigation/native';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebaseConfig";
+import useGoogleAuth from '../src/GoogleAuth';
 
 import logo from '../assets/logo-google.png';
 
@@ -16,9 +17,29 @@ export default function RegisterScreen() {
       const nombre = user.displayName || 'Usuario';
       navigation.navigate('inicio', { userName: nombre });
     } catch (error) {
-      alert("Error al iniciar sesión: " + error.message);
+      let message = 'Ha ocurrido un error inesperado.';
+  
+      switch (error.code) {
+        case 'auth/invalid-email':
+          message = 'La dirección de correo no es válida.';
+          break;
+        case 'auth/user-not-found':
+          message = 'No existe ninguna cuenta con ese correo.';
+          break;
+        case 'auth/invalid-credential':
+          message = 'La contraseña es incorrecta.';
+          break;
+        case 'auth/too-many-requests':
+          message = 'Demasiados intentos fallidos. Intenta más tarde.';
+          break;
+        default:
+          message = 'Error al iniciar sesión: ' + error.message;
+          break;
+      }
+  
+      alert(message);
     }
-  };  
+  };   
 
   const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -28,6 +49,8 @@ export default function RegisterScreen() {
       Montserrat_400Regular,
       Montserrat_500Medium
     });
+
+    const { request, promptAsync } = useGoogleAuth(navigation);
   
     return (
       <View style={styles.container}>
@@ -68,7 +91,7 @@ export default function RegisterScreen() {
           <Text style={styles.loginButtonText}>Iniciar sesión</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.googleButton}>
+        <TouchableOpacity style={styles.googleButton} disabled={!request} onPress={() => promptAsync()}>
           <Image source={logo} style={styles.googleIcon} />
           <Text style={styles.googleButtonText}>Iniciar sesión con Google</Text>
         </TouchableOpacity>

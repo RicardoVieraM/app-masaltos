@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFonts, Montserrat_400Regular } from "@expo-google-fonts/montserrat";
 import { useNavigation } from "@react-navigation/native";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../firebaseConfig";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -10,6 +12,22 @@ export default function ForgotPasswordScreen() {
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
   });
+
+  const handlePasswordReset = async () => {
+    if (!email.includes("@")) {
+      Alert.alert("Correo inválido", "Por favor introduce un correo electrónico válido.");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert("Correo enviado", "Revisa tu bandeja de entrada para restablecer tu contraseña.");
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert("Error", "No se pudo enviar el correo. Verifica el email o intenta más tarde.");
+      console.error(error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -21,9 +39,9 @@ export default function ForgotPasswordScreen() {
       <Text style={styles.subtitle}>Introduzca su dirección de correo electrónico para recibir un código de verificación</Text>
 
       <Text style={styles.label}>Dirección email</Text>
-      <TextInput style={styles.input} placeholder="ejemplo@gmail.com" value={email} onChangeText={setEmail} />
+      <TextInput style={styles.input} placeholder="ejemplo@gmail.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
 
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handlePasswordReset}>
         <Text style={styles.buttonText}>Continuar</Text>
       </TouchableOpacity>
     </View>

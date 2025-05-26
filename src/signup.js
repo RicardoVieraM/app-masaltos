@@ -15,20 +15,39 @@ export default function LoginScreen() {
   const handleSignup = async () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password.trim());
-      
-      // Aquí se guarda el nombre en el perfil
+  
       await updateProfile(userCredential.user, {
         displayName: nombre.trim()
       });
   
       await sendEmailVerification(auth.currentUser);
-
+  
       alert('¡Cuenta creada! Revisa tu email para verificar tu cuenta.');
       navigation.navigate('inicio', { userName: nombre.trim() });
     } catch (error) {
-      alert("Error al registrarse: " + error.message);
+      let message = 'Ha ocurrido un error inesperado.';
+  
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          message = 'Este correo ya está registrado.';
+          break;
+        case 'auth/invalid-email':
+          message = 'La dirección de correo no es válida.';
+          break;
+        case 'auth/weak-password':
+          message = 'La contraseña es demasiado débil. Usa al menos 6 caracteres.';
+          break;
+        case 'auth/missing-password':
+          message = 'Introduce una contraseña.';
+          break;
+        default:
+          message = 'Error al registrarse: ' + error.message;
+          break;
+      }
+  
+      alert(message);
     }
-  };
+  };  
   
 
   const [nombre, setNombre] = useState('');
@@ -66,10 +85,6 @@ export default function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
-
-      <Text style={{ color: emailVerificado ? 'green' : 'red', marginBottom: 10 }}>
-        {emailVerificado ? 'Correo verificado' : 'Correo no verificado'}
-      </Text>
 
       
       <Text style={styles.label}>Contraseña</Text>

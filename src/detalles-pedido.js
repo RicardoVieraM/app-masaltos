@@ -59,7 +59,7 @@ import { useNavigation } from '@react-navigation/native';
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Producto</Text>
           <View style={styles.productRow}>
-            <Image source={{ uri: 'https://via.placeholder.com/70' }} style={styles.productImage} />
+            <Image source={require('../assets/shoe1.png')} style={styles.productImage} />
             <View>
               <Text style={styles.text}>Parma (Talla: 40 - Color: Blanco)</Text>
               <Text style={styles.text}>Referencia: 8435591120554</Text>

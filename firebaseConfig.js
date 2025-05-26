@@ -5,12 +5,13 @@ import { getStorage } from 'firebase/storage';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAyqng8b1UihZZw5uy2AlR1SQicIJUO-ss",
-    authDomain: "app-masaltos.firebaseapp.com",
-    projectId: "app-masaltos",
-    storageBucket: "app-masaltos.firebasestorage.app",
-    messagingSenderId: "908907223903",
-    appId: "1:908907223903:web:65b0924cd368a96d9fb4ea"
+  apiKey: "AIzaSyBkFvRTVclDfSrzKwlIXhRrlwt15WfOWy0",
+  authDomain: "masaltos-app.firebaseapp.com",
+  projectId: "masaltos-app",
+  storageBucket: "masaltos-app.firebasestorage.app",
+  messagingSenderId: "224866707202",
+  appId: "1:224866707202:web:d2535de5fbefbc1f02441b",
+  measurementId: "G-RV7E7YN8CK"
 };
 
 const app = initializeApp(firebaseConfig);

@@ -2,6 +2,7 @@
   "expo": {
     "name": "app-masaltos",
     "slug": "app-masaltos",
+    "scheme": "masaltosapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo-masaltos.png",
@@ -17,10 +18,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "permissions": ["INTERNET", "ACCESS_NETWORK_STATE"],
+        "permissions": [
+          "INTERNET",
+          "ACCESS_NETWORK_STATE",
+          "INTERNET",
+          "ACCESS_NETWORK_STATE"
+        ],
         "foregroundImage": "./assets/logo-masaltos.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.masaltos.dev"
     },
     "web": {
       "favicon": "./assets/logo-masaltos.png"
