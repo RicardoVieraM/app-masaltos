@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   titleContainer: {
-    position: 'absolute', // Permite centrar el título sin que se vea afectado por los botones
+    position: 'absolute',
     left: 0,
     right: 0,
     alignItems: 'center',

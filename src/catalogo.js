@@ -100,6 +100,8 @@ export default function Catalogo() {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [minPrice, setMinPrice] = useState(20);
   const [maxPrice, setMaxPrice] = useState(350);
+  const allProductsCache = useRef(null);
+  const destacadosCache = useRef(null);
 
   const baseURL = "https://pruebas.masaltos.com/api";
   const authHeader = "Basic " + btoa("YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416:");
@@ -145,6 +147,93 @@ export default function Catalogo() {
     const digits = imageId.toString().split("");
     const path = digits.join("/");
     return `https://pruebas.masaltos.com/img/p/${path}/${imageId}.jpg`;
+  };
+
+  const fetchDestacados = async () => {
+    try {
+      const res = await fetch(
+        `${baseURL}/categories/2?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416&output_format=JSON`
+      );
+      const data = await res.json();
+      const productos = data.category.associations.products;
+
+      const detalles = await Promise.all(
+        productos.map(async (prod) => {
+          const r = await fetch(
+            `${baseURL}/products/${prod.id}?output_format=JSON`,
+            { headers }
+          );
+          const d = await r.json();
+          return d.product;
+        })
+      );
+
+      // Filtra los activos
+      const activos = detalles.filter((p) => p.active === "1");
+
+      // Mapea a objetos de producto compatibles
+      const destacados = activos.map((prod) => {
+        const name = Array.isArray(prod.name)
+          ? prod.name[0]?.value || "Sin nombre"
+          : typeof prod.name === "string"
+          ? prod.name
+          : Object.values(prod.name)[0]?.value || "Sin nombre";
+
+        const price = parseFloat(prod.price);
+        const idImage = prod.id_default_image
+          ? parseInt(prod.id_default_image)
+          : null;
+
+        const colors =
+          prod.associations?.product_option_values?.map((opt) =>
+            parseInt(opt.id)
+          ) || [];
+
+        // Crea los IDs de categoría 
+        const categoryIds = new Set();
+        const rawCategories = prod?.associations?.categories;
+        if (rawCategories) {
+          let categoryArray = [];
+          if (Array.isArray(rawCategories)) {
+            categoryArray = rawCategories;
+          } else if (Array.isArray(rawCategories.category)) {
+            categoryArray = rawCategories.category;
+          } else if (rawCategories.category) {
+            categoryArray = [rawCategories.category];
+          }
+          categoryArray.forEach((cat) => {
+            if (cat.id) categoryIds.add(cat.id.toString().trim());
+          });
+        }
+        if (prod.id_category_default) {
+          categoryIds.add(prod.id_category_default.toString().trim());
+        }
+
+        const productType = Array.from(categoryIds)
+          .map((id) => categoryMapRef.current?.[id])
+          .filter(Boolean);
+
+        return {
+          id: prod.id,
+          name,
+          price: `${price.toFixed(2)} €`,
+          imageUrl: idImage
+            ? `https://pruebas.masaltos.com/img/p/${idImage
+                .toString()
+                .split("")
+                .join("/")}/${idImage}.jpg`
+            : null,
+          colors,
+          productType,
+          categoryIds: Array.from(categoryIds),
+        };
+      });
+
+      return destacados;
+    } catch (error) {
+      console.error("❌ Error al cargar destacados:", error);
+      return [];
+    }
   };
 
   const fetchCategoryMap = async () => {
@@ -270,62 +359,84 @@ export default function Catalogo() {
     const loadInitialData = async () => {
       setLoading(true);
       await fetchCategoryMap();
-      const products = await fetchProducts();
 
-      const detailed = await Promise.all(
-        products.map(async (prod) => {
-          try {
-            let name = "Sin nombre";
-            if (Array.isArray(prod.name)) {
-              name = prod.name[0]?.value || "Sin nombre";
-            } else if (typeof prod.name === "object" && prod.name !== null) {
-              name = Object.values(prod.name)[0]?.value || "Sin nombre";
-            } else if (typeof prod.name === "string") {
-              name = prod.name;
-            }
+      const destacados = await fetchDestacados();
+      destacadosCache.current = destacados;
 
-            const price = parseFloat(prod.price);
-            if (isNaN(price)) {
-              console.warn("❌ Producto omitido por precio inválido:", prod);
+      let cleaned = allProductsCache.current;
+
+      if (!cleaned) {
+        const rawProducts = await fetchProducts();
+
+        const detailed = await Promise.all(
+          rawProducts.map(async (prod) => {
+            try {
+              let name = "Sin nombre";
+              if (Array.isArray(prod.name)) {
+                name = prod.name[0]?.value || "Sin nombre";
+              } else if (typeof prod.name === "object" && prod.name !== null) {
+                name = Object.values(prod.name)[0]?.value || "Sin nombre";
+              } else if (typeof prod.name === "string") {
+                name = prod.name;
+              }
+
+              const price = parseFloat(prod.price);
+              if (isNaN(price)) return null;
+
+              const idImage = prod.id_default_image
+                ? parseInt(prod.id_default_image)
+                : null;
+              const imageUrl = idImage ? getPublicImageUrl(idImage) : null;
+              const productType = extractCategoryNames(
+                prod,
+                categoryMapRef.current
+              );
+              const categoryIds = new Set();
+
+              const rawCategories = prod?.associations?.categories;
+              if (rawCategories) {
+                let categoryArray = [];
+                if (Array.isArray(rawCategories)) {
+                  categoryArray = rawCategories;
+                } else if (Array.isArray(rawCategories.category)) {
+                  categoryArray = rawCategories.category;
+                } else if (rawCategories.category) {
+                  categoryArray = [rawCategories.category];
+                }
+                categoryArray.forEach((cat) => {
+                  if (cat.id) categoryIds.add(cat.id.toString().trim());
+                });
+              }
+
+              if (prod.id_category_default) {
+                categoryIds.add(prod.id_category_default.toString().trim());
+              }
+
+              const productColors =
+                prod.associations?.product_option_values?.map((opt) =>
+                  parseInt(opt.id)
+                ) || [];
+
+              return {
+                id: prod.id,
+                name,
+                price: `${price.toFixed(2)} €`,
+                imageUrl,
+                productType,
+                colors: productColors,
+                categoryIds: Array.from(categoryIds),
+              };
+            } catch (e) {
+              console.warn("❌ Error procesando producto:", prod.id, e);
               return null;
             }
+          })
+        );
 
-            const idImage = prod.id_default_image
-              ? parseInt(prod.id_default_image)
-              : null;
-            const imageUrl = idImage ? getPublicImageUrl(idImage) : null;
-            const productType = extractCategoryNames(
-              prod,
-              categoryMapRef.current
-            );
+        cleaned = detailed.filter((p) => p !== null);
+        allProductsCache.current = cleaned;
+      }
 
-            const productColors =
-              prod.associations?.product_option_values?.map((opt) =>
-                parseInt(opt.id)
-              ) || [];
-
-            console.log(`Producto cargado: ${name}`);
-
-            return {
-              id: prod.id,
-              name,
-              price: `${price.toFixed(2)} €`,
-              imageUrl,
-              productType,
-              colors: productColors,
-            };
-          } catch (e) {
-            console.warn(
-              "❌ Error inesperado procesando producto:",
-              prod.id,
-              e
-            );
-            return null;
-          }
-        })
-      );
-
-      const cleaned = detailed.filter((p) => p !== null);
       setAllProducts(cleaned);
 
       if (initialCategory.current) {
@@ -345,13 +456,15 @@ export default function Catalogo() {
         setVisibleProducts(filtered.slice(0, ITEMS_PER_PAGE));
         initialCategory.current = null;
       } else {
+        setFilteredProducts(null);
         setVisibleProducts(cleaned.slice(0, ITEMS_PER_PAGE));
       }
+
       setPage(2);
       currentPageRef.current = 2;
-
       setLoading(false);
     };
+
     loadInitialData();
   }, []);
 
@@ -451,6 +564,31 @@ export default function Catalogo() {
     );
   };
 
+  const handleTopPress = async () => {
+    if (!allProducts || allProducts.length === 0) return;
+
+    if (selectedCategory === "Top") {
+      setSelectedCategory(null);
+      setFilteredProducts(null);
+      setVisibleProducts(allProducts.slice(0, ITEMS_PER_PAGE));
+      setPage(2);
+      currentPageRef.current = 2;
+    } else {
+      let topFiltered = destacadosCache.current;
+
+      if (!topFiltered) {
+        topFiltered = await fetchDestacados();
+        destacadosCache.current = topFiltered;
+      }
+
+      setSelectedCategory("Top");
+      setFilteredProducts(topFiltered);
+      setVisibleProducts(topFiltered.slice(0, ITEMS_PER_PAGE));
+      setPage(2);
+      currentPageRef.current = 2;
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -474,7 +612,7 @@ export default function Catalogo() {
               <Text style={styles.productPrice}>{item.price}</Text>
               <View style={styles.colorOptions}>
                 {item.colors
-                  ?.filter((colorId) => colorMap[colorId]) // Solo si el ID está en el mapa
+                  ?.filter((colorId) => colorMap[colorId])
                   .map((colorId, index) => (
                     <View
                       key={index}
@@ -483,7 +621,7 @@ export default function Catalogo() {
                         {
                           backgroundColor: colorMap[colorId],
                           borderWidth: 1,
-                          borderColor: "#ccc", // gris claro
+                          borderColor: "#ccc",
                         },
                       ]}
                     />
@@ -525,24 +663,44 @@ export default function Catalogo() {
             </TouchableOpacity>
 
             <FlatList
-              data={categories}
-              keyExtractor={(item, index) => index.toString()}
+              data={[{ top: true }, ...categories]}
+              keyExtractor={(item, index) => item.name || `top-${index}`}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesContainer}
-              renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => filterByCategory(item.name)}>
-                  <View
-                    style={[
-                      styles.categoryItem,
-                      selectedCategory === item.name && { opacity: 0.5 },
-                    ]}
-                  >
-                    <Image source={item.image} style={styles.categoryImage} />
-                    <Text style={styles.categoryText}>{item.text}</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
+              renderItem={({ item }) =>
+                item.top ? (
+                  <TouchableOpacity onPress={handleTopPress}>
+                    <View
+                      style={[
+                        styles.categoryItem,
+                        selectedCategory === "Top" && { opacity: 0.5 },
+                      ]}
+                    >
+                      <View style={styles.topCircle}>
+                        <MaterialCommunityIcons
+                          name="fire"
+                          size={30}
+                          color="red"
+                        />
+                      </View>
+                      <Text style={styles.categoryText}>Top</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={() => filterByCategory(item.name)}>
+                    <View
+                      style={[
+                        styles.categoryItem,
+                        selectedCategory === item.name && { opacity: 0.5 },
+                      ]}
+                    >
+                      <Image source={item.image} style={styles.categoryImage} />
+                      <Text style={styles.categoryText}>{item.text}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )
+              }
             />
           </>
         }
@@ -884,5 +1042,38 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 10,
     borderRadius: 2,
+  },
+  topButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#C55417",
+    paddingHorizontal: 10,
+    borderRadius: 50,
+    marginRight: 10,
+    height: 50,
+    justifyContent: "center",
+  },
+  topText: {
+    fontFamily: "Montserrat_400Regular",
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 5,
+  },
+  iconLeft: {
+    marginRight: 5,
+    backgroundColor: "#ffd1b8",
+    padding: 2,
+    borderRadius: 20,
+  },
+  topCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#ffd1b8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 5,
+    borderWidth: 3,
+    borderColor: "#C55417",
   },
 });

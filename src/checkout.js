@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Modal, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
-
+import { useCart } from "./CartContext";
 
 export default function Checkout() {
   const navigation = useNavigation();
   const [isModalVisible, setModalVisible] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const route = useRoute();
+  const { subtotal, impuestos, total } = route.params;
+  const { clearCart } = useCart();
 
   const openModal = () => {
     setModalVisible(true);
@@ -27,6 +30,7 @@ export default function Checkout() {
       duration: 500,
       useNativeDriver: true,
     }).start(() => {
+        clearCart();
         setModalVisible(false);
         navigation.navigate('inicio');
       });
@@ -56,7 +60,7 @@ export default function Checkout() {
                 <MaterialCommunityIcons name="email-outline" size={24} color="black" />
             </View>
             <View style={styles.textContainer}>
-                <Text style={styles.infoText}>nerea@gmail.com</Text>
+                <Text style={styles.infoText}>ricardoviera4m@gmail.com</Text>
                 <Text style={styles.infoDesc}>Email</Text>
             </View>
             <AntDesign name="edit" size={24} color="gray" style={styles.editIcon} />
@@ -67,7 +71,7 @@ export default function Checkout() {
                 <Feather name="phone" size={24} color="black" />
             </View>
             <View style={styles.textContainer}>
-                <Text style={styles.infoText}>+34 638 726 246</Text>
+                <Text style={styles.infoText}>+34 644 87 37 90</Text>
                 <Text style={styles.infoDesc}>Teléfono</Text>
             </View>
             <AntDesign name="edit" size={24} color="gray" style={styles.editIcon} />
@@ -75,7 +79,7 @@ export default function Checkout() {
 
 
         <Text style={styles.sectionTitle}>Dirección</Text>
-        <Text style={styles.addressText}>Calle Feria nº 4-6, Sevilla, 41001</Text>
+        <Text style={styles.addressText}>Calle Aztecas nº 57, Sevilla, 41007</Text>
         <Image source={require('../assets/map.png')} style={styles.map} />
         
 
@@ -92,7 +96,7 @@ export default function Checkout() {
       <View style={styles.summary}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>Subtotal</Text>
-          <Text style={styles.summaryText}>435,00 €</Text>
+          <Text style={styles.summaryText}>{subtotal} €</Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>Transporte</Text>
@@ -100,12 +104,12 @@ export default function Checkout() {
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryText}>Impuestos incluidos</Text>
-          <Text style={styles.summaryText}>46,52 €</Text>
+          <Text style={styles.summaryText}>{impuestos} €</Text>
         </View>
       
         <View style={styles.totalRow}>
           <Text style={styles.totalText}>Total</Text>
-          <Text style={styles.totalText}>402,00 €</Text>
+          <Text style={styles.totalText}>{total} €</Text>
         </View>
 
         <TouchableOpacity style={styles.checkoutBtn} onPress={openModal}>

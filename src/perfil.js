@@ -1,22 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
-import { useFonts, Montserrat_400Regular, Montserrat_500Medium } from '@expo-google-fonts/montserrat';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import Feather from '@expo/vector-icons/Feather';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import { auth } from '../firebaseConfig';
-import * as ImagePicker from 'expo-image-picker';
-import { updateProfile, updatePassword, onAuthStateChanged, EmailAuthProvider , signOut, reauthenticateWithCredential  } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import {
+  useFonts,
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+} from "@expo-google-fonts/montserrat";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import Feather from "@expo/vector-icons/Feather";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import { auth } from "../firebaseConfig";
+import * as ImagePicker from "expo-image-picker";
+import {
+  updateProfile,
+  updatePassword,
+  onAuthStateChanged,
+  EmailAuthProvider,
+  signOut,
+  reauthenticateWithCredential,
+} from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const LOCAL_STORAGE_KEY = '@profile_image_url';
+const LOCAL_STORAGE_KEY = "@profile_image_url";
 
 export default function PerfilScreen() {
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [emailVerificado, setEmailVerificado] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -28,7 +48,7 @@ export default function PerfilScreen() {
 
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
-    Montserrat_500Medium
+    Montserrat_500Medium,
   });
 
   useEffect(() => {
@@ -38,18 +58,33 @@ export default function PerfilScreen() {
         if (storedImage) {
           setImageUri(storedImage);
         }
-        setIsLoaded(true); // 🔥 Indicamos que se ha terminado de cargar
+        setIsLoaded(true);
       } catch (error) {
-        console.log("Error al cargar la imagen del almacenamiento local: ", error);
+        console.log(
+          "Error al cargar la imagen del almacenamiento local: ",
+          error
+        );
       }
     };
 
     loadImageFromStorage();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setNombre(user.displayName || "");
+        setEmail(user.email || "");
+        setEmailVerificado(user.emailVerified);
+      }
+    });
+
+    return () => unsubscribe(); // Limpieza
+  }, []);
 
   const handlePickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
       alert("Se necesita permiso para acceder a las fotos.");
@@ -76,7 +111,6 @@ export default function PerfilScreen() {
     }
   };
 
-
   const handleUpdateProfile = async () => {
     const user = auth.currentUser;
     try {
@@ -87,7 +121,10 @@ export default function PerfilScreen() {
         return;
       }
 
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword
+      );
       await reauthenticateWithCredential(user, credential);
 
       await updateProfile(user, { displayName: nombre.trim() });
@@ -97,25 +134,30 @@ export default function PerfilScreen() {
         alert("Contraseña actualizada correctamente.");
       }
 
-      alert('Perfil actualizado correctamente.');
+      alert("Perfil actualizado correctamente.");
     } catch (error) {
-      alert('Error al actualizar el perfil: ' + error.message);
+      alert("Error al actualizar el perfil: " + error.message);
     }
+    await user.reload();
+    setNombre(auth.currentUser.displayName);
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigation.navigate('signin');
+      navigation.navigate("signin");
     } catch (error) {
-      alert('Error al cerrar sesión: ' + error.message);
+      alert("Error al cerrar sesión: " + error.message);
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.headerIcon}
+          onPress={() => navigation.navigate("inicio", { userName: nombre })}
+        >
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.category}> Perfil </Text>
@@ -128,19 +170,24 @@ export default function PerfilScreen() {
         {uploading ? (
           <ActivityIndicator size="large" color="#C55417" />
         ) : (
-          isLoaded && ( // 🔥 Asegúrate de que la imagen solo se muestra si se ha cargado
-            <Image 
-              source={imageUri ? { uri: imageUri } : require('../assets/pfp.png')} 
-              style={styles.image} 
+          isLoaded && ( 
+            <Image
+              source={
+                imageUri ? { uri: imageUri } : require("../assets/pfp.png")
+              }
+              style={styles.image}
             />
           )
         )}
-        <TouchableOpacity style={styles.cameraContainer} onPress={handlePickImage}>
+        <TouchableOpacity
+          style={styles.cameraContainer}
+          onPress={handlePickImage}
+        >
           <Feather name="camera" size={15} color="white" />
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>{nombre || 'Tu perfil'}</Text>
+      <Text style={styles.title}>{nombre || "Tu perfil"}</Text>
 
       <Text style={styles.label}>Nombre completo</Text>
       <TextInput style={styles.input} value={nombre} onChangeText={setNombre} />
@@ -149,13 +196,22 @@ export default function PerfilScreen() {
       <TextInput style={styles.input} value={email} editable={false} />
 
       <Text style={styles.label}>Contraseña actual</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="••••••••"
-        secureTextEntry={true}
-        value={currentPassword}
-        onChangeText={setCurrentPassword}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Introduzca su contraseña"
+          secureTextEntry={true}
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+        />
+        <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+          <MaterialCommunityIcons
+            name={secureText ? "eye-off" : "eye"}
+            size={24}
+            color="gray"
+          />
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.label}>Nueva contraseña</Text>
       <View style={styles.passwordContainer}>
@@ -167,7 +223,11 @@ export default function PerfilScreen() {
           onChangeText={setPassword}
         />
         <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-          <MaterialCommunityIcons name={secureText ? 'eye-off' : 'eye'} size={24} color="gray" />
+          <MaterialCommunityIcons
+            name={secureText ? "eye-off" : "eye"}
+            size={24}
+            color="gray"
+          />
         </TouchableOpacity>
       </View>
 
@@ -185,28 +245,28 @@ export default function PerfilScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
     padding: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
     marginTop: 10,
   },
   category: {
-    fontFamily: 'Montserrat_500Medium',
+    fontFamily: "Montserrat_500Medium",
     fontSize: 20,
   },
   headerIcon: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 25,
   },
   imageContainer: {
-    alignSelf: 'center',
-    position: 'relative',
+    alignSelf: "center",
+    position: "relative",
   },
   image: {
     height: 100,
@@ -214,72 +274,71 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   cameraContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: '#C55417',
+    backgroundColor: "#C55417",
     height: 30,
     width: 30,
     borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Montserrat_500Medium',
-    textAlign: 'center',
+    fontFamily: "Montserrat_500Medium",
+    textAlign: "center",
     marginTop: 10,
     marginBottom: 30,
   },
   label: {
     fontSize: 14,
-    fontFamily: 'Montserrat_500Medium',
+    fontFamily: "Montserrat_500Medium",
     marginTop: 15,
     marginBottom: 5,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   input: {
-    fontFamily: 'Montserrat_400Regular',
-    backgroundColor: '#fff',
+    fontFamily: "Montserrat_400Regular",
+    backgroundColor: "#fff",
     padding: 12,
     borderRadius: 40,
-    width: '100%',
+    width: "100%",
   },
   passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
     borderRadius: 40,
     paddingHorizontal: 12,
-    marginBottom: 15,
-    width: '100%',
+    width: "100%",
   },
   passwordInput: {
     flex: 1,
     paddingVertical: 12,
   },
   saveButton: {
-    backgroundColor: '#C55417',
+    backgroundColor: "#C55417",
     padding: 15,
     borderRadius: 30,
-    alignItems: 'center',
-    marginTop: 20,
+    alignItems: "center",
+    marginTop: 50,
   },
   saveButtonText: {
-    fontFamily: 'Montserrat_500Medium',
-    color: '#fff',
+    fontFamily: "Montserrat_500Medium",
+    color: "#fff",
     fontSize: 16,
   },
   logoutButton: {
-    backgroundColor: '#6c757d',
+    backgroundColor: "#6c757d",
     padding: 15,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
   },
   logoutButtonText: {
-    fontFamily: 'Montserrat_500Medium',
-    color: '#fff',
+    fontFamily: "Montserrat_500Medium",
+    color: "#fff",
     fontSize: 16,
   },
 });

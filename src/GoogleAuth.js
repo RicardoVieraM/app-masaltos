@@ -5,16 +5,14 @@ import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { makeRedirectUri } from 'expo-auth-session';
 
 export default function useGoogleAuth(navigation) {
-  // ✅ define redirectUri con useProxy
   const redirectUri = makeRedirectUri({ useProxy: true });
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: '224866707202-5hfa2vvu260oo0kt209lcg8ns8r9v7vs.apps.googleusercontent.com',
-    redirectUri, // 🔧 usa la variable definida arriba
+    redirectUri,
   });
 
   useEffect(() => {
-    console.log('✅ Redirect URI:', redirectUri); // Confirmación
     if (response?.type === 'success') {
       const { id_token } = response.params;
       const credential = GoogleAuthProvider.credential(id_token);

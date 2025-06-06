@@ -34,7 +34,7 @@ export default function Notifications() {
       </View>
 
       <View style={styles.card}>
-        <Image source={require('../assets/img1.png')} style={styles.img} />
+        <Image source={require('../assets/shoe3.png')} style={styles.img} />
         <View style={styles.textContainer}>
           <Text style={styles.description}>Tenemos nuevos productos en oferta</Text>
           <Text style={styles.price}>120,60 €  <Text style={styles.oldPrice}>134,00 €</Text></Text>

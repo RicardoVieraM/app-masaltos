@@ -17,6 +17,7 @@ import {
 } from "@expo-google-fonts/montserrat";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Feather from "@expo/vector-icons/Feather";
+import { useCart } from "./CartContext";
 
 export default function DetailsScreen() {
   const navigation = useNavigation();
@@ -27,6 +28,8 @@ export default function DetailsScreen() {
   const [imagenSeleccionada, setImagenSeleccionada] = useState(null);
   const [tallaSeleccionada, setTallaSeleccionada] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
+  const [categoriaNombre, setCategoriaNombre] = useState("Sin categoría");
 
   let [fontsLoaded] = useFonts({
     Montserrat_400Regular,
@@ -52,7 +55,7 @@ export default function DetailsScreen() {
 
   const tallasRaw = detalle?.associations?.product_option_values || [];
   const tallas = tallasRaw
-    .filter((t) => mapaTallas[t.id]) // solo IDs válidos
+    .filter((t) => mapaTallas[t.id])
     .map((t) => ({
       id: t.id,
       valor: mapaTallas[t.id],
@@ -65,9 +68,9 @@ export default function DetailsScreen() {
       if (esNumero(aVal) && esNumero(bVal)) {
         return parseInt(aVal) - parseInt(bVal);
       } else if (!esNumero(aVal) && !esNumero(bVal)) {
-        return aVal.localeCompare(bVal); // ordenar S, M, L
+        return aVal.localeCompare(bVal);
       } else {
-        return esNumero(aVal) ? -1 : 1; // números primero
+        return esNumero(aVal) ? -1 : 1;
       }
     });
 
@@ -101,6 +104,58 @@ export default function DetailsScreen() {
         if (Array.isArray(data.products) && data.products.length > 0) {
           const productoDetallado = data.products[0];
           setDetalle(productoDetallado);
+
+          const categoriasApi =
+            productoDetallado?.associations?.categories || [];
+
+          const mapaCategorias = {
+            botas: "Botas",
+            "zapatos para novio": "Novios",
+            "sneakers corner": "Sneakers",
+            "zapatos casual": "Casual",
+            "zapatos de vestir": "Vestir",
+            mocasines: "Mocasines",
+            "zapatos goodyear": "Goodyear",
+            "complementos calzado": "Complementos",
+          };
+
+          let encontrada = null;
+
+          for (const cat of categoriasApi) {
+            try {
+              const res = await fetch(
+                `https://pruebas.masaltos.com/api/categories/${cat.id}?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416&output_format=JSON`
+              );
+              const data = await res.json();
+
+              let nombreRaw = "";
+
+              const name = data.category?.name;
+
+              if (Array.isArray(name)) {
+                const es = name.find((n) => n.id == 1);
+                nombreRaw = es?.value || name[0]?.value || "";
+              } else if (name?.language) {
+                nombreRaw =
+                  name.language[0]?.value ||
+                  Object.values(name.language)?.[0]?.value ||
+                  "";
+              }
+
+              const nombreProcesado = nombreRaw.trim().toLowerCase();
+
+              if (mapaCategorias[nombreProcesado]) {
+                encontrada = mapaCategorias[nombreProcesado];
+                break;
+              }
+            } catch (err) {
+              console.warn("Error obteniendo categoría:", err);
+            }
+          }
+
+          if (encontrada) {
+            setCategoriaNombre(encontrada);
+          }
         } else {
           console.warn("❌ La API no devolvió ningún producto");
         }
@@ -114,33 +169,12 @@ export default function DetailsScreen() {
     fetchDetalles();
   }, []);
 
-  const obtenerNombreCategoria = (tipos) => {
-    if (!Array.isArray(tipos)) return "Sin categoría";
-
-    const mapa = {
-      botas: "Botas",
-      "zapatos para novio": "Novios",
-      "sneakers corner": "Sneakers",
-      "zapatos casual": "Casual",
-      "zapatos de vestir": "Vestir",
-      mocasines: "Mocasines",
-      "zapatos goodyear": "Goodyear",
-    };
-
-    for (let tipo of tipos) {
-      const clave = tipo.trim().toLowerCase();
-      if (mapa[clave]) return mapa[clave];
-    }
-
-    return tipos[0] || "Sin categoría";
+  const getNombreProducto = (name) => {
+    if (typeof name === "string") return name;
+    if (!Array.isArray(name)) return "Sin nombre";
+    const idioma1 = name.find((n) => n.id === "1" || n.id === 1);
+    return idioma1?.value || name[0]?.value || "Sin nombre";
   };
-
-  const getNombreProducto = (nameArray) => {
-    if (!Array.isArray(nameArray)) return 'Sin nombre';
-    const idioma1 = nameArray.find(n => n.id === "1" || n.id === 1);
-    return idioma1?.value || nameArray[0]?.value || 'Sin nombre';
-  };
-
 
   if (!fontsLoaded || loading) {
     return <ActivityIndicator size="large" style={{ marginTop: 100 }} />;
@@ -152,20 +186,35 @@ export default function DetailsScreen() {
     detalle?.associations?.images &&
     Array.isArray(detalle.associations.images)
   ) {
-    imagenes = detalle.associations.images.map((img) => {
-      const imageId = img.id.toString();
+    const defaultId = detalle.id_default_image?.toString();
+    const imageList = detalle.associations.images.map((img) =>
+      img.id.toString()
+    );
+
+    // Construir ruta de imagen
+    const getUrlFromId = (imageId) => {
       const path = imageId.split("").join("/");
       return `https://pruebas.masaltos.com/img/p/${path}/${imageId}.jpg`;
-    });
-  } else {
-    console.log("🚫 No hay imágenes en detalle.associations.images");
+    };
+
+    // Añadir imagen por defecto primero, si existe
+    if (defaultId) {
+      imagenes.push(getUrlFromId(defaultId));
+    }
+
+    // Añadir el resto de imágenes, excluyendo la que ya se añadió
+    imagenes.push(
+      ...imageList
+        .filter((id) => id !== defaultId)
+        .map((id) => getUrlFromId(id))
+    );
   }
 
   let descripcionCorta = "Sin descripción";
 
   const descripcionShort = detalle?.description_short;
 
-  // Si viene como array (más común)
+  // Si viene como array
   if (Array.isArray(descripcionShort)) {
     const idioma1 = descripcionShort.find((d) => d.id === "1" || d.id == 1);
     if (idioma1?.value) {
@@ -173,7 +222,7 @@ export default function DetailsScreen() {
     }
   }
 
-  // Si viene como objeto tipo { language: [...] }
+  // Si viene como objeto 
   else if (descripcionShort?.language) {
     const lang = descripcionShort.language;
 
@@ -190,6 +239,32 @@ export default function DetailsScreen() {
     }
   }
 
+  const handleAddToCart = () => {
+    if (!tallaSeleccionada) {
+      alert("Selecciona una talla");
+      return;
+    }
+
+    const defaultId = detalle?.id_default_image?.toString();
+    const getUrlFromId = (imageId) => {
+      const path = imageId.split("").join("/");
+      return `https://pruebas.masaltos.com/img/p/${path}/${imageId}.jpg`;
+    };
+
+    const imagenPorDefecto = defaultId ? getUrlFromId(defaultId) : null;
+
+    const productoFinal = {
+      id: detalle.id,
+      name: getNombreProducto(producto.name),
+      price: parseFloat(producto.price) || 0,
+      size: mapaTallas[tallaSeleccionada],
+      image: imagenPorDefecto,
+    };
+
+    addToCart(productoFinal);
+    alert("Producto añadido al carrito");
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -199,22 +274,21 @@ export default function DetailsScreen() {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.category}>
-          {obtenerNombreCategoria(producto.productType)}
-        </Text>
-        <TouchableOpacity style={styles.headerIcon}>
+        <Text style={styles.category}>{categoriaNombre}</Text>
+        <TouchableOpacity
+          style={styles.headerIcon}
+          onPress={() => navigation.navigate("cart")}
+        >
           <Feather name="shopping-bag" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
       <Image
-  source={{
-    uri: imagenSeleccionada ||
-      `https://pruebas.masaltos.com/api/images/products/${producto.id}/${producto.id_default_image}?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416`
-  }}
-  style={[styles.image]}
-/>
-
+        source={{
+          uri: imagenSeleccionada || imagenes[0],
+        }}
+        style={styles.image}
+      />
 
       <View style={styles.productCard}>
         <Text style={styles.title}>{getNombreProducto(producto.name)}</Text>
@@ -284,9 +358,11 @@ export default function DetailsScreen() {
         <View style={styles.priceRow}>
           <View>
             <Text style={styles.priceText}>Precio</Text>
-            <Text style={styles.price}>{producto.price}</Text>
+            <Text style={styles.price}>
+              {parseFloat(producto.price).toFixed(2)} €
+            </Text>
           </View>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={handleAddToCart}>
             <Text style={styles.buttonText}>Añadir al carrito</Text>
           </TouchableOpacity>
         </View>

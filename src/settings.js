@@ -221,19 +221,19 @@ const styles = StyleSheet.create({
     marginVertical: 13,
   },
   background: {
-    width: 45, // Ajustado para ser más pequeño
-    height: 25, // Ajustado para ser más pequeño
-    borderRadius: 15, // Borde redondeado más pequeño
-    padding: 5, // Margen alrededor del botón reducido
+    width: 45,
+    height: 25,
+    borderRadius: 15,
+    padding: 5,
     justifyContent: 'center',
   },
   switch: {
-    transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }], // Reducido para que el switch sea más pequeño
+    transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }], 
     position: 'absolute',
     alignSelf: 'center',
   },
   arrowIcon: {
-    marginLeft: 'auto', // Mueve el icono a la derecha
+    marginLeft: 'auto',
     marginRight: 10,
   },  
 });

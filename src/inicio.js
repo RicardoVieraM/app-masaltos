@@ -57,18 +57,23 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [destacados, setDestacados] = useState([]);
   const [loadingDestacados, setLoadingDestacados] = useState(true);
+  const [nuevos, setNuevos] = useState([]);
+  const [loadingNuevos, setLoadingNuevos] = useState(true);
+  const nuevosRef = useRef(null);
+  const [nuevosIndex, setNuevosIndex] = useState(0);
+  const carruselInterval = useRef(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const getDestacados = async () => {
       try {
-        setLoadingDestacados(true); // 🟡 empieza la carga
+        setLoadingDestacados(true);
 
         const res = await fetch(
           "https://pruebas.masaltos.com/api/categories/2?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416&output_format=JSON"
         );
         const data = await res.json();
         const productos = data.category.associations.products;
-
         const primeros15 = productos.slice(0, 15);
 
         const detalles = await Promise.all(
@@ -86,12 +91,57 @@ export default function HomeScreen() {
       } catch (error) {
         console.error("Error cargando productos destacados:", error);
       } finally {
-        setLoadingDestacados(false); // ✅ termina la carga
+        setLoadingDestacados(false);
+      }
+    };
+
+    const getNuevos = async () => {
+      try {
+        setLoadingNuevos(true);
+
+        const res = await fetch(
+          "https://pruebas.masaltos.com/api/products?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416&output_format=JSON"
+        );
+        const data = await res.json();
+        const productos = data.products.slice(0, 10);
+
+        const detalles = await Promise.all(
+          productos.map(async (prod) => {
+            const r = await fetch(
+              `https://pruebas.masaltos.com/api/products/${prod.id}?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416&output_format=JSON`
+            );
+            const d = await r.json();
+            return d.product;
+          })
+        );
+
+        const nuevosFiltrados = detalles
+          .filter((p) => p.condition === "new" && p.active === "1")
+          .slice(0, 10);
+
+        setNuevos(nuevosFiltrados);
+      } catch (error) {
+        console.error("Error cargando productos nuevos:", error);
+      } finally {
+        setLoadingNuevos(false);
       }
     };
 
     getDestacados();
+    getNuevos();
   }, []);
+
+  useEffect(() => {
+    if (!loadingNuevos && nuevos.length > 0) {
+      startAutoScroll();
+    }
+
+    return () => {
+      if (carruselInterval.current) {
+        clearInterval(carruselInterval.current);
+      }
+    };
+  }, [loadingNuevos, nuevos]);
 
   const getNombreProducto = (nameArray) => {
     if (!Array.isArray(nameArray)) return "Sin nombre";
@@ -152,8 +202,25 @@ export default function HomeScreen() {
       };
 
       loadImage();
-    }, [userImage]) // 🔥 Ahora también se actualiza cuando cambias la imagen en perfil.js
+    }, [userImage])
   );
+
+  const startAutoScroll = () => {
+    if (carruselInterval.current) clearInterval(carruselInterval.current);
+
+    carruselInterval.current = setInterval(() => {
+      setNuevosIndex((prev) => {
+        const next = (prev + 1) % nuevos.length;
+        nuevosRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, 4000);
+  };
+
+  const destacadosConExtra = [
+    ...destacados,
+    { id: "ver-todos", esVerTodos: true },
+  ];
 
   return (
     <View style={styles.container}>
@@ -291,7 +358,12 @@ export default function HomeScreen() {
           keyExtractor={(item, index) => item.name || `top-${index}`}
           renderItem={({ item }) =>
             item.top ? (
-              <TouchableOpacity style={styles.top}>
+              <TouchableOpacity
+                style={styles.top}
+                onPress={() =>
+                  navigation.navigate("catalogo", { selectedCategory: "Top" })
+                }
+              >
                 <MaterialCommunityIcons
                   name="fire"
                   size={24}
@@ -322,7 +394,7 @@ export default function HomeScreen() {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 10,
+            marginBottom: 5,
             paddingHorizontal: 5,
           }}
         >
@@ -339,44 +411,72 @@ export default function HomeScreen() {
             style={{ marginVertical: 20 }}
           />
         ) : (
-          <FlatList
-            horizontal
-            data={destacados}
-            keyExtractor={(item) => item.id.toString()}
-            showsHorizontalScrollIndicator={false}
-            initialNumToRender={5}
-            maxToRenderPerBatch={5}
-            windowSize={5}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.productCard}
-                onPress={() =>
-                  navigation.navigate("details", { producto: item })
-                }
-              >
-                <Image
-                  source={{
-                    uri: `https://pruebas.masaltos.com/api/images/products/${item.id}/${item.id_default_image}?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416`,
-                  }}
-                  style={styles.productImage}
-                  defaultSource={require("../assets/img1.png")}
-                />
-                <View style={styles.productInfo}>
-                  <Text style={styles.desc}>BEST SELLER</Text>
-                  <Text style={styles.productTitle}>
-                    {getNombreProducto(item.name)}
-                  </Text>
-                  <Text style={styles.productPrice}>
-                    {parseFloat(item.price).toFixed(2)} €
-                  </Text>
-                </View>
-                <TouchableOpacity style={styles.add}>
-                  <Text style={styles.addText}>+</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            )}
-            style={styles.popularShoes}
-          />
+          <>
+            <FlatList
+              horizontal
+              data={destacadosConExtra}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              initialNumToRender={5}
+              maxToRenderPerBatch={5}
+              windowSize={5}
+              renderItem={({ item }) =>
+                item.esVerTodos ? (
+                  <TouchableOpacity
+                    style={{
+                      width: 120,
+                      height: 230,
+                      borderRadius: 15,
+                      marginRight: 10,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                    onPress={() => navigation.navigate("catalogo")}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Montserrat_500Medium",
+                        color: "#C55417",
+                        fontSize: 16,
+                        marginBottom: 10,
+                      }}
+                    >
+                      Ver todos
+                    </Text>
+                    <Feather name="arrow-right" size={24} color="#C55417" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.productCard}
+                    onPress={() =>
+                      navigation.navigate("details", { producto: item })
+                    }
+                  >
+                    <Image
+                      source={{
+                        uri: `https://pruebas.masaltos.com/api/images/products/${item.id}/${item.id_default_image}?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416`,
+                      }}
+                      style={styles.productImage}
+                      defaultSource={require("../assets/img1.png")}
+                    />
+                    <View style={styles.productInfo}>
+                      <Text style={styles.desc}>BEST SELLER</Text>
+                      <Text style={styles.productTitle}>
+                        {getNombreProducto(item.name)}
+                      </Text>
+                      <Text style={styles.productPrice}>
+                        {parseFloat(item.price).toFixed(2)} €
+                      </Text>
+                    </View>
+                    <TouchableOpacity style={styles.add}>
+                      <Text style={styles.addText}>+</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                )
+              }
+              style={styles.popularShoes}
+            />
+          </>
         )}
 
         <View
@@ -384,39 +484,118 @@ export default function HomeScreen() {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 10,
+            marginBottom: 5,
             paddingHorizontal: 5,
           }}
         >
           <Text style={styles.sectionTitle}>Nuevos</Text>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("catalogo", { selectedCategory: "Top" })
+            }
+          >
             <Text style={styles.verTodos}>Ver todos</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          scrollEnabled={false}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.popularShoes}
-        >
-          <TouchableOpacity style={styles.lastProductCard}>
-            <View>
-              <Text style={styles.desc}>BEST CHOICE</Text>
-              <Text style={styles.productTitle}>Corby A azul</Text>
-              <Text style={styles.productPrice}>139,00 €</Text>
-            </View>
-            <Image
-              source={require("../assets/shoe3.png")}
-              style={styles.lastProductImage}
+        {loadingNuevos ? (
+          <ActivityIndicator
+            size="large"
+            color="#C55417"
+            style={{ marginVertical: 20 }}
+          />
+        ) : (
+          <>
+            <FlatList
+              horizontal
+              pagingEnabled
+              ref={nuevosRef}
+              data={nuevos}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const newIndex = Math.round(
+                  event.nativeEvent.contentOffset.x /
+                    event.nativeEvent.layoutMeasurement.width
+                );
+                setNuevosIndex(newIndex);
+                Animated.timing(progressAnim, {
+                  toValue: newIndex,
+                  duration: 300,
+                  useNativeDriver: false,
+                }).start();
+                startAutoScroll();
+              }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.lastProductCard}
+                  onPress={() =>
+                    navigation.navigate("details", { producto: item })
+                  }
+                >
+                  <View>
+                    <Text style={styles.desc}>BEST CHOICE</Text>
+                    <Text style={styles.productTitle}>
+                      {getNombreProducto(item.name)}
+                    </Text>
+                    <Text style={styles.productPrice}>
+                      {parseFloat(item.price).toFixed(2)} €
+                    </Text>
+                  </View>
+                  <Image
+                    source={{
+                      uri: `https://pruebas.masaltos.com/api/images/products/${item.id}/${item.id_default_image}?ws_key=YYCYCN9NITMGC4LP6SE7ZAG3K9Y2Z416`,
+                    }}
+                    style={styles.lastProductImage}
+                  />
+                </TouchableOpacity>
+              )}
+              style={styles.popularShoes}
             />
-          </TouchableOpacity>
-        </ScrollView>
+
+            {/* Barra de progreso animada */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+              }}
+            >
+              {nuevos.map((_, index) => {
+                const width = progressAnim.interpolate({
+                  inputRange: [index - 1, index, index + 1],
+                  outputRange: [8, 20, 8],
+                  extrapolate: "clamp",
+                });
+
+                const backgroundColor = progressAnim.interpolate({
+                  inputRange: [index - 1, index, index + 1],
+                  outputRange: ["#ccc", "#C55417", "#ccc"],
+                  extrapolate: "clamp",
+                });
+
+                return (
+                  <Animated.View
+                    key={index}
+                    style={{
+                      width,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor,
+                      marginHorizontal: 4,
+                    }}
+                  />
+                );
+              })}
+            </View>
+          </>
+        )}
       </View>
 
       <TouchableOpacity
         style={styles.floatingCart}
-        onPress={() => navigation.navigate("catalogo")}
+        onPress={() =>
+          navigation.navigate("catalogo")
+        }
       >
         <Feather name="calendar" size={24} color="#fff" />
       </TouchableOpacity>
@@ -603,7 +782,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   popularShoes: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontFamily: "Montserrat_500Medium",
@@ -613,28 +792,19 @@ const styles = StyleSheet.create({
   productCard: {
     backgroundColor: "#fff",
     width: 170,
-    height: 230, // añade altura total para contener imagen + textos
+    height: 230,
     padding: 10,
     borderRadius: 15,
     marginRight: 10,
     position: "relative",
-    justifyContent: "flex-start", // importante
+    justifyContent: "flex-start",
   },
   productImage: {
     width: 150,
     height: 100,
     alignSelf: "center",
-    marginBottom: 10, // ← necesario
-  },
-
-  /*
-  desc: {
-    color: '#C55417',
-    fontFamily: 'Montserrat_400Regular',
-    fontSize: 12,
     marginBottom: 10,
   },
-*/
   desc: {
     color: "#C55417",
     fontFamily: "Montserrat_500Medium",
@@ -709,7 +879,7 @@ const styles = StyleSheet.create({
   },
   floatingCart: {
     position: "absolute",
-    bottom: 40,
+    bottom: 35,
     alignSelf: "center",
     backgroundColor: "#C55417",
     width: 60,
@@ -743,7 +913,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 15,
   },
   categoryItem: {
     alignItems: "center",
